@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=12";
+import { api } from "./api.js?v=13";
 
 const app = document.querySelector("#app");
 
@@ -204,6 +204,16 @@ const field = (label, value = "", type = "text", name = "", extra = "") => `
   <label class="field">
     <span>${label}</span>
     <input type="${type}" value="${value ?? ""}" ${name ? `data-field="${name}"` : ""} ${extra} />
+  </label>
+`;
+
+const moneyInputField = (label, value = "", name = "", placeholder = "") => `
+  <label class="field money-field">
+    <span>${label}</span>
+    <div style="position:relative; display:flex; align-items:center;">
+      <input type="text" data-type="money" value="${value ? new Intl.NumberFormat("vi-VN").format(numberValue(value)) : ""}" ${name ? `data-field="${name}"` : ""} placeholder="${placeholder}" style="padding-right:30px; width:100%" />
+      <span style="position:absolute; right:12px; color:var(--muted); pointer-events:none">₫</span>
+    </div>
   </label>
 `;
 
@@ -519,8 +529,8 @@ const renderRoomForm = () => {
       <div class="form-grid">
         ${field("Mã phòng *", isNew ? "" : room.id, "text", "id", isNew ? 'placeholder="VD: B202"' : "readonly")}
         ${field("Diện tích (m2) *", room.area, "number", "area", 'placeholder="25"')}
-        ${field("Giá thuê *", room.rent, "number", "rent", 'placeholder="2500000"')}
-        ${field("Tiền cọc *", room.deposit, "number", "deposit", 'placeholder="2500000"')}
+        ${moneyInputField("Giá thuê *", room.rent, "rent", "2.500.000")}
+        ${moneyInputField("Tiền cọc *", room.deposit, "deposit", "2.500.000")}
         ${!isNew ? `
           ${selectField("Trạng thái", room.status, ["Đang thuê", "Còn trống", "Bảo trì"], "status")}
         ` : ""}
@@ -621,12 +631,12 @@ const renderContract = () => {
           ${selectField("Chọn khách thuê", c.tenant, arrays.tenants().map(t => t.name), "tenant")}
           ${dateField("Ngày bắt đầu", state.contractStartDate, "contractStartDate")}
           ${dateField("Ngày kết thúc", state.contractEndDate, "contractEndDate")}
-          ${field("Tiền thuê", c.rent, "number", "rent")}
-          ${field("Tiền cọc", c.deposit, "number", "deposit")}
+          ${moneyInputField("Tiền thuê", c.rent, "rent")}
+          ${moneyInputField("Tiền cọc", c.deposit, "deposit")}
           ${selectField("Trạng thái", c.status || "Chờ ký", ["Chờ ký", "Đang hiệu lực", "Đã kết thúc"], "status")}
         </div>
       </article>
-      ${state.selectedContract ? `
+      ${(!state.selectedContract || c.status !== "Đang hiệu lực") ? `
       <article class="card contract-preview">
         <h2>HỢP ĐỒNG THUÊ PHÒNG TRỌ</h2>
         <p><b>Bên cho thuê:</b> ${state.landlord.name}</p>
@@ -1373,8 +1383,13 @@ const collectForm = (name) => {
   const payload = {};
   if (!root) return payload;
   root.querySelectorAll("[data-field]").forEach((fieldNode) => {
-    const value = fieldNode.value;
-    payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
+    let value = fieldNode.value;
+    if (fieldNode.dataset.type === "money") {
+      value = numberValue(value.replace(/\D/g, ""));
+      payload[fieldNode.dataset.field] = value;
+    } else {
+      payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
+    }
   });
   return payload;
 };
@@ -1632,6 +1647,16 @@ app.addEventListener("input", (event) => {
     let val = target.value.replace(/\D/g, "");
     if (val.length > 12) val = val.slice(0, 12);
     target.value = val;
+    return;
+  }
+
+  if (target.dataset.type === "money") {
+    let val = target.value.replace(/\D/g, "");
+    if (val) {
+      target.value = new Intl.NumberFormat("vi-VN").format(val);
+    } else {
+      target.value = "";
+    }
     return;
   }
 
