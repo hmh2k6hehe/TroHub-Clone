@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=11";
+import { api } from "./api.js?v=12";
 
 const app = document.querySelector("#app");
 
@@ -297,9 +297,8 @@ const renderLogin = () => shell(`
         <p class="muted">Đăng ký tài khoản chủ trọ hoặc người thuê.</p>
         <label class="field"><span>Họ tên *</span><input id="reg-fullName" placeholder="Nguyễn Văn A" /></label>
         <label class="field"><span>Số điện thoại *</span><input id="reg-phone" placeholder="0901234567" /></label>
-        <label class="field"><span>Email</span><input id="reg-email" type="email" placeholder="email@example.com" /></label>
+        <label class="field"><span>Email (Đồng thời là tên đăng nhập) *</span><input id="reg-email" type="email" placeholder="email@example.com" /></label>
         <label class="field"><span>CCCD</span><input id="reg-idCard" placeholder="079012345678" /></label>
-        <label class="field"><span>Tên đăng nhập *</span><input id="reg-username" placeholder="Số điện thoại hoặc email" /></label>
         <label class="field"><span>Mật khẩu *</span><input id="reg-password" type="password" placeholder="Ít nhất 6 ký tự" /></label>
         <label class="field">
           <span>Loại tài khoản</span>
@@ -547,7 +546,7 @@ const renderTenants = () => {
         <thead><tr><th>Họ tên</th><th>Email đăng nhập</th><th>Số điện thoại</th><th>Phòng</th><th>CCCD</th><th>Ngày bắt đầu</th><th>Tài khoản</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
         <tbody>
           ${tenants.map((tenant) => `
-            <tr>
+            <tr data-tenant-detail-row="${tenant.id}" style="cursor:pointer">
               <td><b>${tenant.name}</b></td>
               <td>${tenant.email || "-"}</td>
               <td>${tenant.phone}</td>
@@ -594,9 +593,28 @@ const renderTenantForm = () => {
 
 const renderContract = () => {
   const c = findContract();
-  return renderAdminShell("Tạo hợp đồng", `
+  const allContracts = arrays.contracts();
+  return renderAdminShell("Quản lý hợp đồng", `
     <div class="contract-layout" data-form="contract">
       <article class="card panel">
+        <div class="panel-head"><h2>Danh sách hợp đồng</h2></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Phòng</th><th>Khách thuê</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th></tr></thead>
+            <tbody>
+              ${allContracts.map(ct => `
+                <tr data-contract-select="${ct.id}" style="cursor:pointer;${state.selectedContract === ct.id ? 'background:var(--accent-bg)' : ''}">
+                  <td>${ct.room}</td>
+                  <td>${ct.tenant}</td>
+                  <td>${ct.startDate || '-'}</td>
+                  <td>${ct.endDate || '-'}</td>
+                  <td>${badge(ct.status || 'Chờ ký')}</td>
+                </tr>
+              `).join('') || '<tr><td colspan="5">Chưa có hợp đồng.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+        <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
         <h2>Thông tin hợp đồng</h2>
         <div class="form-grid one">
           ${field("Mã hợp đồng", c.id, "text", "id")}
@@ -1086,23 +1104,57 @@ const renderTenantInvoiceTable = () => `
   </div>
 `;
 
-const renderTenantInvoices = () => renderTenantShell("Hóa đơn và phí", `
+const renderTenantInvoices = () => {
+  const now = new Date();
+  const filterRange = state.tenantInvoiceFilter || 'month';
+  let fromDate, toDate;
+  if (filterRange === 'month') {
+    fromDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (filterRange === '3month') {
+    fromDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (filterRange === '6month') {
+    fromDate = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    toDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (filterRange === 'custom') {
+    fromDate = parseDate(state.tenantInvoiceFrom || formatDate(new Date(now.getFullYear(), now.getMonth(), 1)));
+    toDate = parseDate(state.tenantInvoiceTo || formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)));
+  } else {
+    fromDate = new Date(2020, 0, 1);
+    toDate = new Date(2099, 11, 31);
+  }
+
+  return renderTenantShell("Hóa đơn và phí", `
+  <div class="filter-row">
+    ${button("Tháng này", "tenant-filter-month", filterRange === 'month' ? 'primary' : 'outline')}
+    ${button("3 tháng", "tenant-filter-3month", filterRange === '3month' ? 'primary' : 'outline')}
+    ${button("6 tháng", "tenant-filter-6month", filterRange === '6month' ? 'primary' : 'outline')}
+    ${button("Tùy chọn ngày", "tenant-filter-custom", filterRange === 'custom' ? 'primary' : 'outline')}
+    ${filterRange === 'custom' ? `
+      ${dateField("", state.tenantInvoiceFrom || formatDate(new Date(now.getFullYear(), now.getMonth(), 1)), "tenantInvoiceFrom")}
+      ${dateField("", state.tenantInvoiceTo || formatDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)), "tenantInvoiceTo")}
+      ${button("Áp dụng", "tenant-filter-apply")}
+    ` : ''}
+    ${button("Đặt lại", "tenant-filter-reset", "secondary")}
+  </div>
   <article class="card panel">
     <div class="panel-head">
       <div>
         <h2>Chi tiết các khoản phí</h2>
-        <p class="muted">Bao gồm tiền phòng, điện, nước, dịch vụ và phí phạt nếu quá hạn.</p>
+        <p class="muted">Chỉ hiển thị hóa đơn của bạn. Bao gồm tiền phòng, điện, nước, dịch vụ và phí phạt nếu quá hạn.</p>
       </div>
     </div>
     ${renderTenantInvoiceTable()}
   </article>
 `);
+};
 
 const renderTenantPayments = () => renderTenantShell("Lịch sử thanh toán", `
   <div class="metric-grid">
     <article class="metric card"><span>Tổng đã thanh toán</span><strong>${money((tenantPortal().stats || {}).paidTotal || 0)}</strong><small>Tất cả giao dịch thành công</small></article>
     <article class="metric card"><span>Chưa thanh toán</span><strong>${money((tenantPortal().stats || {}).unpaidTotal || 0)}</strong><small>Còn phải thu</small></article>
-    <article class="metric card"><span>Giao dịch</span><strong>${tenantPayments().length}</strong><small>Lịch sử của phòng</small></article>
+    <article class="metric card"><span>Giao dịch</span><strong>${tenantPayments().length}</strong><small>Lịch sử của tôi</small></article>
     <article class="metric card"><span>Phí phạt</span><strong>${money((tenantPortal().stats || {}).penaltyTotal || 0)}</strong><small>Theo hóa đơn</small></article>
   </div>
   <article class="card panel">
@@ -1184,6 +1236,76 @@ const renderTenant = () => {
   return pages[state.tenantPage]?.() || renderTenantOverview();
 };
 
+const renderTenantDetail = () => {
+  const tenant = arrays.tenants().find(t => t.id === state.selectedTenant);
+  if (!tenant) return renderTenants();
+  const tenantContracts = arrays.contracts().filter(c => c.tenant === tenant.name);
+  const activeContract = tenantContracts.find(c => c.status === "Đang hiệu lực") || tenantContracts[0];
+  const tenantInvoices = arrays.invoices().filter(i => i.tenant === tenant.name);
+  const unpaidInvoices = tenantInvoices.filter(i => i.status === "Chưa thanh toán");
+  return renderAdminShell("Chi tiết khách thuê", `
+    <div class="two-col">
+      <article class="card panel">
+        <div class="panel-head"><h2>${tenant.name}</h2>${badge(tenant.status)}</div>
+        <dl class="info-list">
+          <div><dt>Mã khách</dt><dd>${tenant.id}</dd></div>
+          <div><dt>Số điện thoại</dt><dd>${tenant.phone}</dd></div>
+          <div><dt>Email</dt><dd>${tenant.email || "-"}</dd></div>
+          <div><dt>CCCD</dt><dd>${tenant.citizenId || "-"}</dd></div>
+          <div><dt>Ngày bắt đầu</dt><dd>${tenant.startDate}</dd></div>
+          <div><dt>Tài khoản</dt><dd>${badge(tenant.accountStatus || "Chưa tạo")}</dd></div>
+        </dl>
+        <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+        <h3>Phòng đang thuê</h3>
+        ${activeContract ? `
+          <dl class="info-list">
+            <div><dt>Phòng</dt><dd><b>${activeContract.room}</b></dd></div>
+            <div><dt>Thời hạn</dt><dd>${activeContract.startDate || "-"} → ${activeContract.endDate || "-"}</dd></div>
+            <div><dt>Tiền thuê</dt><dd>${money(activeContract.rent || 0)}</dd></div>
+            <div><dt>Trạng thái HĐ</dt><dd>${badge(activeContract.status || "-")}</dd></div>
+          </dl>
+        ` : `<p class="muted">Chưa có hợp đồng hiệu lực.</p>`}
+        <div class="form-actions" style="margin-top:16px">
+          ${button("← Quay lại", "cancel-tenant", "outline")}
+          ${button("Sửa thông tin", "edit-tenant-from-detail")}
+        </div>
+      </article>
+      <article class="card panel">
+        <div class="panel-head"><h2>Hóa đơn chưa thanh toán</h2><span class="badge warning">${unpaidInvoices.length}</span></div>
+        ${unpaidInvoices.length > 0 ? `
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Mã HĐ</th><th>Tháng</th><th>Tổng</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                ${unpaidInvoices.map(i => `
+                  <tr><td><b>${i.id}</b></td><td>${i.fromDate || "-"}</td><td><b>${money(i.total)}</b></td><td>${badge(i.status)}</td></tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="form-actions" style="margin-top:16px">
+            ${button("Gửi yêu cầu thanh toán", "send-payment-request")}
+          </div>
+        ` : `<p class="muted">Không có hóa đơn chưa thanh toán.</p>`}
+        <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
+        <div class="panel-head"><h2>Lịch sử hợp đồng</h2></div>
+        ${tenantContracts.length > 0 ? `
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Phòng</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                ${tenantContracts.map(c => `
+                  <tr><td>${c.room}</td><td>${c.startDate || "-"}</td><td>${c.endDate || "-"}</td><td>${badge(c.status || "-")}</td></tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        ` : `<p class="muted">Chưa có hợp đồng.</p>`}
+      </article>
+    </div>
+  `);
+};
+
 const renderAdmin = () => {
   const pages = {
     dashboard: renderDashboard,
@@ -1192,6 +1314,7 @@ const renderAdmin = () => {
     "room-form": renderRoomForm,
     tenants: renderTenants,
     "tenant-form": renderTenantForm,
+    "tenant-detail": renderTenantDetail,
     contract: renderContract,
     invoices: renderInvoices,
     "invoice-create": renderInvoiceCreate,
@@ -1358,6 +1481,7 @@ const handleAction = async (action) => {
 
     if (action === "add-tenant") return setState({ selectedTenant: "", adminPage: "tenant-form" });
     if (action === "cancel-tenant") return setState({ adminPage: "tenants" });
+    if (action === "edit-tenant-from-detail") return setState({ adminPage: "tenant-form" });
     if (action === "save-tenant") {
       const payload = collectForm("tenant");
       if (!payload.password) delete payload.password;
@@ -1441,6 +1565,24 @@ const handleAction = async (action) => {
     if (action === "reset-dashboard-range") return setState({ dashboardFrom: "01/05/2026", dashboardTo: "31/05/2026", activeCalendar: "" });
     if (action === "reset-invoice-filter") return setState({ invoiceFrom: "01/05/2026", invoiceTo: "31/05/2026", activeCalendar: "" });
     if (action === "apply-dashboard-range" || action === "apply-invoice-filter") return setState({ activeCalendar: "" });
+
+    // Tenant invoice filter buttons
+    if (action === "tenant-filter-month") return setState({ tenantInvoiceFilter: "month" });
+    if (action === "tenant-filter-3month") return setState({ tenantInvoiceFilter: "3month" });
+    if (action === "tenant-filter-6month") return setState({ tenantInvoiceFilter: "6month" });
+    if (action === "tenant-filter-custom") return setState({ tenantInvoiceFilter: "custom" });
+    if (action === "tenant-filter-apply") return setState({ tenantInvoiceFilter: "custom" });
+    if (action === "tenant-filter-reset") return setState({ tenantInvoiceFilter: "month", tenantInvoiceFrom: "", tenantInvoiceTo: "" });
+
+    // Gửi yêu cầu thanh toán cho khách thuê
+    if (action === "send-payment-request") {
+      const tenantId = state.selectedTenant;
+      const tenant = arrays.tenants().find(t => t.id === tenantId);
+      if (!tenant) return showToast("Chưa chọn khách thuê");
+      const unpaid = arrays.invoices().filter(i => i.tenant === tenant.name && i.status === "Chưa thanh toán");
+      if (unpaid.length === 0) return showToast("Khách này không có hóa đơn chưa thanh toán");
+      return showToast(`Đã gửi yêu cầu thanh toán ${unpaid.length} hóa đơn cho ${tenant.name}`);
+    }
 
     if (action === "show-login") return setState({ showRegister: false });
     if (action === "show-register") return setState({ showRegister: true });
@@ -1559,10 +1701,10 @@ app.addEventListener("click", async (event) => {
     const phone = document.querySelector("#reg-phone").value.trim();
     const email = document.querySelector("#reg-email").value.trim();
     const idCard = document.querySelector("#reg-idCard").value.trim();
-    const username = document.querySelector("#reg-username").value.trim();
+    const username = email; // Email chính là tên đăng nhập
     const password = document.querySelector("#reg-password").value.trim();
     const role = Number(document.querySelector("#reg-role").value);
-    if (!fullName || !phone || !username || !password) return showToast("Vui lòng điền đầy đủ thông tin có dấu *");
+    if (!fullName || !phone || !email || !password) return showToast("Vui lòng điền đầy đủ thông tin có dấu *");
     if (password.length < 6) return showToast("Mật khẩu phải có ít nhất 6 ký tự");
     showToast("Đang đăng ký...");
     try {
@@ -1694,6 +1836,11 @@ app.addEventListener("click", async (event) => {
     return; // handled by input event
   }
 
+  if (target.dataset.contractSelect) {
+    setState({ selectedContract: target.dataset.contractSelect });
+    return;
+  }
+
   if (target.dataset.invoiceDetail) {
     setState({ selectedInvoice: target.dataset.invoiceDetail, adminPage: "invoice-detail" });
     return;
@@ -1701,6 +1848,11 @@ app.addEventListener("click", async (event) => {
 
   if (target.dataset.repairSelect) {
     setState({ selectedRepair: target.dataset.repairSelect });
+    return;
+  }
+
+  if (target.dataset.tenantDetailRow) {
+    setState({ selectedTenant: target.dataset.tenantDetailRow, adminPage: "tenant-detail" });
     return;
   }
 
