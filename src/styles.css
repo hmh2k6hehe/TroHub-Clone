@@ -120,6 +120,15 @@ button {
   border-color: var(--light);
 }
 
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn.danger:hover {
+  background: #b91c1c;
+}
+
 .btn.full {
   width: 100%;
 }
@@ -1079,4 +1088,31 @@ tbody tr:hover {
   .form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Login Tabs */
+.login-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.login-tabs .chip {
+  flex: 1;
+  text-align: center;
+}
+
+/* Search input inside filter */
+.search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+  color: var(--text);
+  min-height: 38px;
+}
+
+.search input::placeholder {
+  color: var(--muted);
 }

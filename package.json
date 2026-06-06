@@ -2,10 +2,11 @@
   "name": "trohub-web-only",
   "version": "1.0.0",
   "private": true,
-  "description": "TroHub web admin demo built with static HTML, CSS, and JavaScript.",
+  "type": "module",
+  "description": "TroHub web admin with a local API and optional MongoDB storage.",
   "scripts": {
     "dev": "python3 -m http.server 5173 --bind 127.0.0.1",
-    "dev:5174": "python3 -m http.server 5174 --bind 127.0.0.1",
+    "dev:api": "cd API_DuAnTotNghiep && npm start",
     "start": "python3 -m http.server 5173 --bind 127.0.0.1"
   },
   "keywords": [
@@ -14,5 +15,8 @@
     "room-rental",
     "vanilla-js"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "optionalDependencies": {
+    "mongodb": "^6.20.0"
+  }
 }
