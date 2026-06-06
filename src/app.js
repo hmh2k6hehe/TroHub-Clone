@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=15";
+import { api } from "./api.js?v=16";
 
 const app = document.querySelector("#app");
 
@@ -743,8 +743,8 @@ const renderInvoiceCreate = () => {
           ${calcField("Đơn giá nước / m3", "calcWaterPrice")}
           ${calcField("Phí xe + internet + rác", "calcServiceAmount")}
           ${calcField("Giảm giá", "calcDiscount")}
-          ${selectField("Phương thức thanh toán", invoice.paymentMethod || "QR ngân hàng", ["QR ngân hàng", "MoMo", "VNPay", "ZaloPay", "Tiền mặt"], "paymentMethod")}
-          ${field("Mã giao dịch", invoice.transactionCode || "-", "text", "transactionCode")}
+          ${selectField("Phương thức thanh toán", "QR ngân hàng", ["QR ngân hàng", "MoMo", "VNPay", "ZaloPay", "Tiền mặt"], "paymentMethod")}
+          ${field("Mã giao dịch", "-", "text", "transactionCode")}
         </div>
         <div class="calc-rule">
           <b>Quy tắc phạt:</b> sau khi xuất hóa đơn, nếu chưa thanh toán trong vòng 7 ngày thì phạt 10% tổng tiền trước phạt.
@@ -1467,7 +1467,7 @@ const saveInvoice = async (status) => {
     penaltyRate: 0.1,
     penalty: calc.penalty,
     total: calc.total,
-    status: status || state.calcPaidStatus
+    status: status || state.calcPaidStatus || "Chưa thanh toán"
   };
   const created = await api.invoices.create(payload);
   state.selectedInvoice = created.id;
