@@ -1,5 +1,5 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=14";
+import { api } from "./api.js?v=15";
 
 const app = document.querySelector("#app");
 
@@ -772,12 +772,12 @@ const renderInvoiceCreate = () => {
         <p class="muted" data-calc-output="penaltyNote">${calc.isLate ? "Hóa đơn đã quá 7 ngày và chưa thanh toán, hệ thống áp dụng phạt 10%." : "Chưa áp dụng phạt vì còn trong 7 ngày hoặc đã thanh toán."}</p>
         <div class="form-actions">
           ${button("Lưu nháp", "draft-invoice", "outline")}
-          ${button("Xuất hóa đơn tháng này", "export-month-invoice")}
+          ${button("Tạo hóa đơn", "export-month-invoice")}
           ${button("Xuất PDF", "export-invoice-pdf", "secondary")}
         </div>
       </article>
     </div>
-  `, "Tạo hóa đơn");
+  `);
 };
 
 const renderInvoiceDetail = () => {
