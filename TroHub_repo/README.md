@@ -1,50 +1,47 @@
-# Welcome to your Expo app 👋
+# TroHub - Ứng dụng Quản lý Phòng trọ (Mobile & Web)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+TroHub là ứng dụng đa nền tảng được xây dựng bằng React Native (thông qua Expo Router), cho phép Chủ trọ quản lý các phòng cho thuê và Người thuê theo dõi hợp đồng, hóa đơn, cũng như báo cáo sự cố.
 
-## Get started
+## Tính năng chính
+- **Dành cho Chủ trọ (Admin)**: Quản lý danh sách phòng, người thuê, tạo/duyệt hợp đồng, lập hóa đơn, quản lý yêu cầu sửa chữa.
+- **Dành cho Người thuê**: Xem thông tin hợp đồng đang thuê, thanh toán hóa đơn, theo dõi lịch sử thanh toán, gửi báo cáo sửa chữa.
 
-1. Install dependencies
+## Công nghệ & Thư viện sử dụng
+- **Khung ứng dụng**: [Expo SDK 54](https://expo.dev/)
+- **UI & Core**: React Native (v0.81), TypeScript
+- **Điều hướng**: `expo-router` (File-based routing) & `@react-navigation/native`
+- **Lưu trữ dữ liệu tạm thời**: `@react-native-async-storage/async-storage`
+- **Icon**: `@expo/vector-icons`
 
+## Hướng dẫn cài đặt và khởi chạy
+
+1. **Cài đặt thư viện**
+   Mở terminal tại thư mục dự án và chạy:
    ```bash
    npm install
    ```
 
-2. Start the app
+2. **Cấu hình API**
+   Vào file `constants/api.ts` để kiểm tra và thay đổi `API_BASE_URL` trỏ về server Backend Node.js của bạn (nếu có).
 
-   ```bash
-   npx expo start
-   ```
+3. **Khởi chạy ứng dụng**
+   - Chạy trên máy ảo Android (cần có Android Studio):
+     ```bash
+     npm run android
+     ```
+   - Chạy trên máy ảo iOS (cần macOS và Xcode):
+     ```bash
+     npm run ios
+     ```
+   - Chạy trên nền tảng Web:
+     ```bash
+     npm run web
+     ```
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Cấu trúc thư mục
+- `/app`: Chứa các file định tuyến màn hình (Routing) của Expo Router.
+- `/screens`: Code giao diện của các màn hình cụ thể.
+- `/components`: Các UI Component dùng chung (Card, Modal,...).
+- `/services`: Các hàm tương tác với Backend API.
+- `/types`: Khai báo kiểu dữ liệu TypeScript.
+- `/constants`: Chứa biến màu sắc theme, đường dẫn API.
