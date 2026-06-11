@@ -16,7 +16,39 @@
   --divider: #f3f4f6;
   --accent-bg: #fff3e8;
   --shadow: 0 16px 42px rgba(31, 41, 55, 0.08);
+  --topbar-bg: rgba(255, 255, 255, 0.94);
 }
+
+:root[data-theme="dark"] {
+  --primary: #f37021;
+  --primary-hover: #fa813c;
+  --secondary: #ff9d5c;
+  --light: #2d1d13;
+  --white: #1f2937;
+  --bg: #111827;
+  --text: #f9fafb;
+  --sub: #9ca3af;
+  --muted: #6b7280;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --border: #374151;
+  --divider: #2d3748;
+  --accent-bg: #2d1d13;
+  --shadow: 0 16px 42px rgba(0, 0, 0, 0.4);
+  --topbar-bg: rgba(31, 41, 55, 0.94);
+  
+  --badge-info-bg: #1e3a8a;
+  --badge-success-bg: #064e3b;
+  --badge-warning-bg: #78350f;
+  --badge-danger-bg: #7f1d1d;
+}
+
+body, .sidebar, .topbar, .card, .btn, .chip, .search, table, th, td, input, select, textarea, .tabs button, .calendar-popover {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
 
 * {
   box-sizing: border-box;
@@ -71,7 +103,7 @@ button {
   place-items: center;
   border-radius: 12px;
   background: var(--primary);
-  color: var(--white);
+  color: #ffffff;
   font-weight: 800;
   font-size: 14px;
 }
@@ -95,13 +127,19 @@ button {
   border: 1px solid transparent;
   border-radius: 12px;
   background: var(--primary);
-  color: var(--white);
+  color: #ffffff;
   font-weight: 800;
   font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .btn:hover {
   background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(1px);
 }
 
 .btn.outline {
@@ -142,6 +180,20 @@ button {
   color: var(--primary);
   background: var(--light);
   font-weight: 900;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--accent-bg);
+  transform: scale(1.05);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
 }
 
 .avatar,
@@ -152,7 +204,7 @@ button {
   place-items: center;
   border-radius: 999px;
   background: var(--secondary);
-  color: var(--white);
+  color: #ffffff;
   font-weight: 900;
 }
 
@@ -170,7 +222,7 @@ button {
   min-height: 28px;
   padding: 5px 12px;
   border-radius: 999px;
-  background: #dbeafe;
+  background: var(--badge-info-bg, #dbeafe);
   color: var(--info);
   font-size: 12px;
   font-weight: 800;
@@ -179,17 +231,17 @@ button {
 
 .badge.success {
   color: var(--success);
-  background: #dcfce7;
+  background: var(--badge-success-bg, #dcfce7);
 }
 
 .badge.warning {
   color: var(--warning);
-  background: #fef3c7;
+  background: var(--badge-warning-bg, #fef3c7);
 }
 
 .badge.danger {
   color: var(--danger);
-  background: #fee2e2;
+  background: var(--badge-danger-bg, #fee2e2);
 }
 
 .field {
@@ -484,7 +536,7 @@ button {
   justify-content: space-between;
   gap: 24px;
   padding: 18px 32px;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--topbar-bg);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }

@@ -127,8 +127,13 @@ export default function AdminInvoicesScreen() {
       const waterAmount = Math.max(0, Number(waterNew) - Number(waterOld)) * 20000;
       const totalAmount = rentPrice + electricityAmount + waterAmount + servicesFee;
 
+      const rId = typeof roomContract.roomId === "string" ? roomContract.roomId : roomContract.roomId._id;
+      const tId = typeof roomContract.tenantId === "string" ? roomContract.tenantId : roomContract.tenantId._id;
+
       await adminService.createInvoice({
         contractId: roomContract._id,
+        roomId: rId,
+        tenantUserId: tId,
         period: period.trim(),
         dueDate: dueDate.trim(),
         fromDate,
@@ -145,7 +150,7 @@ export default function AdminInvoicesScreen() {
         services: servicesFee,
         discount: 0,
         total: totalAmount,
-        status: 0 // Chưa thanh toán
+        status: 1 // 1: Chưa thanh toán
       });
       Alert.alert("Thành công", "Tạo hóa đơn thành công!");
       setModalVisible(false);
@@ -157,21 +162,35 @@ export default function AdminInvoicesScreen() {
     }
   };
 
-  const getStatusText = (status: number) => {
-    return status === 1 ? "Đã thanh toán" : "Chưa thanh toán";
+  const getStatusText = (status: any) => {
+    if (status === 0 || status === "DRAFT" || status === "Nháp") return "Nháp";
+    if (status === 1 || status === "UNPAID" || status === "Chưa thanh toán") return "Chưa thanh toán";
+    if (status === 2 || status === "PAID" || status === "Đã thanh toán") return "Đã thanh toán";
+    if (status === 3 || status === "OVERDUE" || status === "Quá hạn") return "Quá hạn";
+    return "Chưa thanh toán";
   };
 
-  const getStatusColor = (status: number) => {
-    return status === 1 ? COLORS.green : COLORS.red;
+  const getStatusColor = (status: any) => {
+    if (status === 0 || status === "DRAFT" || status === "Nháp") return COLORS.orange;
+    if (status === 1 || status === "UNPAID" || status === "Chưa thanh toán") return COLORS.red;
+    if (status === 2 || status === "PAID" || status === "Đã thanh toán") return COLORS.green;
+    if (status === 3 || status === "OVERDUE" || status === "Quá hạn") return COLORS.muted;
+    return COLORS.red;
   };
 
-  const getStatusBg = (status: number) => {
-    return status === 1 ? "#EAF9F1" : "#FFF1F1";
+  const getStatusBg = (status: any) => {
+    if (status === 0 || status === "DRAFT" || status === "Nháp") return COLORS.orangeSoft;
+    if (status === 1 || status === "UNPAID" || status === "Chưa thanh toán") return "#FFF1F1";
+    if (status === 2 || status === "PAID" || status === "Đã thanh toán") return "#EAF9F1";
+    if (status === 3 || status === "OVERDUE" || status === "Quá hạn") return "#E8E9ED";
+    return "#FFF1F1";
   };
 
   const filteredInvoices = invoices.filter(invoice => {
-    if (filter === "unpaid") return invoice.status === 0;
-    if (filter === "paid") return invoice.status === 1;
+    const isUnpaid = invoice.status === 1 || invoice.status === 0 || invoice.status === 3 || invoice.status === "UNPAID" || invoice.status === "DRAFT" || invoice.status === "OVERDUE" || invoice.status === "Chưa thanh toán" || invoice.status === "Nháp" || invoice.status === "Quá hạn";
+    const isPaid = invoice.status === 2 || invoice.status === "PAID" || invoice.status === "Đã thanh toán";
+    if (filter === "unpaid") return isUnpaid;
+    if (filter === "paid") return isPaid;
     return true;
   });
 

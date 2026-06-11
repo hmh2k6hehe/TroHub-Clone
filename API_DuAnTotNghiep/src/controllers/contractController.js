@@ -116,6 +116,15 @@ exports.confirmContract = async (req, res) => {
 exports.updateContract = async (req, res) => {
     try {
         const { roomId, tenantId, startDate, endDate, fixedRentPrice, fixedDeposit, status } = req.body;
+        
+        const existing = await Contract.findById(req.params.id);
+        if (!existing) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng!" });
+
+        // Admin tạo hợp đồng phải thông qua người thuê ký (status = 4), nếu không thì không tự xác nhận thành Đang hiệu lực (1) được.
+        if (status !== undefined && Number(status) === 1 && existing.status !== 4) {
+            return res.status(400).json({ success: false, message: "Khách thuê chưa ký hợp đồng này, Admin không thể xác nhận!" });
+        }
+
         const updateData = {};
         if (roomId !== undefined) updateData.roomId = roomId;
         if (tenantId !== undefined) updateData.tenantId = tenantId;
@@ -128,8 +137,6 @@ exports.updateContract = async (req, res) => {
         const updated = await Contract.findByIdAndUpdate(req.params.id, updateData, { new: true })
             .populate('roomId', 'roomCode area')
             .populate('tenantId', 'fullName phone');
-
-        if (!updated) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng!" });
 
         // Nếu admin đổi trạng thái thành hiệu lực (1) → đổi phòng thành Đang thuê
         if (status === 1 && updated.roomId) {

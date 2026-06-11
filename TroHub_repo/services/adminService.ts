@@ -212,7 +212,7 @@ export const adminService = {
       const occupiedRooms = rooms.filter(r => r.status === 1).length;
       const pendingRepairs = repairs.filter(r => r.status === 0 || r.status === 1).length;
       const totalRevenue = invoices
-        .filter(inv => inv.status === 1)
+        .filter(inv => inv.status === 2)
         .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
 
       return {

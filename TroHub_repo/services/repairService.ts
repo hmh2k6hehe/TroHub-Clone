@@ -43,7 +43,7 @@ const mapPriorityFromApi = (priority: number): Priority => {
   return "Trung bình";
 };
 
-const mapPriorityToApi = (priority: Priority): number => {
+const mapPriorityToApi = (priority?: Priority): number => {
   if (priority === "Cao") return 3;
   if (priority === "Thấp") return 1;
   return 2;
@@ -67,15 +67,20 @@ const formatDate = (value?: string) => {
   return date.toLocaleDateString("vi-VN");
 };
 
-const mapApiRepairToRepair = (item: ApiRepairRequest): RepairRequest => {
+const mapApiRepairToRepair = (item: any): RepairRequest => {
+  const roomCode = item.room?.code || item.room?.roomCode || item.contractId?.roomId?.roomCode || item.room || "A101";
+  const images = Array.isArray(item.images)
+    ? item.images.map((img: any) => typeof img === 'string' ? img : (img.fileUrl || img.url || ''))
+    : [];
   return {
-    id: item._id,
-    room: item.contractId?.roomId?.roomCode || "A101",
-    type: item.title,
+    id: item._id || item.id,
+    room: roomCode,
+    type: item.title || item.category || "",
     priority: mapPriorityFromApi(item.priority),
-    description: item.content,
+    description: item.content || item.description || "",
     status: mapStatusFromApi(item.status),
     createdAt: formatDate(item.createdAt),
+    images,
   };
 };
 
@@ -134,9 +139,11 @@ export const repairService = {
         "/repairs",
         {
           tenantId: authUser.id,
+          room: request.room,
           title: request.type,
           content: request.description,
           priority: mapPriorityToApi(request.priority),
+          images: request.images || [],
         },
         token
       );

@@ -14,4 +14,7 @@ router.get('/:id', invoiceController.getInvoiceById);
 // Đánh dấu thanh toán (Tự động sinh Transaction)
 router.put('/:id/pay', invoiceController.payInvoice);
 
+// Cập nhật hóa đơn
+router.put('/:id', invoiceController.updateInvoice);
+
 module.exports = router;

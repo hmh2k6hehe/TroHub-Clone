@@ -8,7 +8,9 @@ import {
   View,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import Card from "../components/Card";
 import { COLORS } from "../constants/theme";
 import {
@@ -17,12 +19,14 @@ import {
   RepairStatus,
 } from "../types/RepairRequest";
 import { repairService } from "../services/repairService";
+import { contractService } from "../services/contractService";
 
 export default function RepairScreen() {
-  const [room] = useState("A101");
+  const [rooms, setRooms] = useState<string[]>([]);
+  const [selectedRoom, setSelectedRoom] = useState("");
   const [type, setType] = useState("");
-  const [priority, setPriority] = useState<Priority>("Trung bình");
   const [description, setDescription] = useState("");
+  const [images, setImages] = useState<string[]>([]);
 
   const [typeError, setTypeError] = useState("");
   const [descriptionError, setDescriptionError] = useState("");
@@ -32,7 +36,40 @@ export default function RepairScreen() {
 
   useEffect(() => {
     loadRequests();
+    loadRooms();
   }, []);
+
+  const loadRooms = async () => {
+    try {
+      const contracts = await contractService.getMyContracts();
+      // filter only active contracts
+      const activeRooms = contracts
+        .filter(c => c.status === "active")
+        .map(c => c.room);
+      
+      // Remove duplicates
+      const uniqueRooms = Array.from(new Set(activeRooms));
+      
+      if (uniqueRooms.length > 0) {
+        setRooms(uniqueRooms);
+        setSelectedRoom(uniqueRooms[0]);
+      } else {
+        const allRooms = contracts.map(c => c.room);
+        const uniqueAllRooms = Array.from(new Set(allRooms));
+        if (uniqueAllRooms.length > 0) {
+          setRooms(uniqueAllRooms);
+          setSelectedRoom(uniqueAllRooms[0]);
+        } else {
+          setRooms(["Chưa có phòng"]);
+          setSelectedRoom("Chưa có phòng");
+        }
+      }
+    } catch (error) {
+      console.log("Lỗi load phòng từ hợp đồng:", error);
+      setRooms(["A101"]);
+      setSelectedRoom("A101");
+    }
+  };
 
   const loadRequests = async () => {
     try {
@@ -70,10 +107,10 @@ export default function RepairScreen() {
 
     try {
       const updatedRequests = await repairService.createRequest({
-        room,
+        room: selectedRoom,
         type: type.trim(),
-        priority,
         description: description.trim(),
+        images,
       });
 
       setRequests(updatedRequests);
@@ -81,11 +118,37 @@ export default function RepairScreen() {
       Alert.alert("Thành công", "Yêu cầu sửa chữa đã được gửi");
 
       setType("");
-      setPriority("Trung bình");
       setDescription("");
+      setImages([]);
     } catch (error) {
       console.log("Lỗi gửi yêu cầu:", error);
       Alert.alert("Lỗi", "Không thể gửi yêu cầu sửa chữa");
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Quyền truy cập", "Bạn cần cấp quyền truy cập thư viện ảnh để tải ảnh lên.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (!result.canceled) {
+        const newImages = result.assets
+          .map((asset) => asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri)
+          .filter(Boolean) as string[];
+        setImages((prev) => [...prev, ...newImages]);
+      }
+    } catch (error) {
+      console.log("Lỗi chọn ảnh:", error);
+      Alert.alert("Lỗi", "Không thể chọn ảnh");
     }
   };
 
@@ -99,7 +162,7 @@ export default function RepairScreen() {
     }
   };
 
-  const getPriorityStyle = (value: Priority) => {
+  const getPriorityStyle = (value?: Priority) => {
     if (value === "Cao") return styles.priorityHigh;
     if (value === "Thấp") return styles.priorityLow;
     return styles.priorityMedium;
@@ -141,7 +204,32 @@ export default function RepairScreen() {
         <Text style={styles.sectionTitle}>Tạo yêu cầu mới</Text>
 
         <Text style={styles.label}>Phòng</Text>
-        <TextInput style={styles.inputDisabled} value={room} editable={false} />
+        {rooms.length <= 1 ? (
+          <TextInput style={styles.inputDisabled} value={selectedRoom} editable={false} />
+        ) : (
+          <View style={styles.roomSelectRow}>
+            {rooms.map((roomCode) => {
+              const active = selectedRoom === roomCode;
+
+              return (
+                <Pressable
+                  key={roomCode}
+                  style={[styles.roomButton, active && styles.roomActive]}
+                  onPress={() => setSelectedRoom(roomCode)}
+                >
+                  <Text
+                    style={[
+                      styles.roomText,
+                      active && styles.roomTextActive,
+                    ]}
+                  >
+                    Phòng {roomCode}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         <Text style={styles.label}>Loại sự cố</Text>
         <TextInput
@@ -155,30 +243,6 @@ export default function RepairScreen() {
           placeholderTextColor={COLORS.muted}
         />
         {typeError ? <Text style={styles.errorText}>{typeError}</Text> : null}
-
-        <Text style={styles.label}>Mức độ ưu tiên</Text>
-        <View style={styles.priorityRow}>
-          {(["Cao", "Trung bình", "Thấp"] as Priority[]).map((item) => {
-            const active = priority === item;
-
-            return (
-              <Pressable
-                key={item}
-                style={[styles.priorityButton, active && styles.priorityActive]}
-                onPress={() => setPriority(item)}
-              >
-                <Text
-                  style={[
-                    styles.priorityText,
-                    active && styles.priorityTextActive,
-                  ]}
-                >
-                  {item}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
 
         <Text style={styles.label}>Mô tả</Text>
         <TextInput
@@ -200,11 +264,24 @@ export default function RepairScreen() {
           <Text style={styles.errorText}>{descriptionError}</Text>
         ) : null}
 
-        <Pressable style={styles.uploadBox}>
+        <Pressable style={styles.uploadBox} onPress={pickImage}>
           <Text style={styles.uploadIcon}>＋</Text>
           <Text style={styles.uploadText}>Upload ảnh sự cố</Text>
-          <Text style={styles.uploadHint}>PNG, JPG hoặc JPEG</Text>
+          <Text style={styles.uploadHint}>PNG, JPG hoặc JPEG ({images.length} ảnh đã chọn)</Text>
         </Pressable>
+
+        {images.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagePreviewContainer}>
+            {images.map((img, idx) => (
+              <View key={idx} style={styles.imagePreviewBox}>
+                <Image source={{ uri: img }} style={styles.previewImage} />
+                <Pressable style={styles.removeImageBtn} onPress={() => setImages(prev => prev.filter((_, i) => i !== idx))}>
+                  <Text style={styles.removeImageText}>×</Text>
+                </Pressable>
+              </View>
+            ))}
+          </ScrollView>
+        )}
 
         <Pressable style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitText}>Gửi yêu cầu</Text>
@@ -236,6 +313,14 @@ export default function RepairScreen() {
             </View>
 
             <Text style={styles.requestDesc}>{item.description}</Text>
+
+            {item.images && item.images.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.historyImagesContainer}>
+                {item.images.map((imgUrl, idx) => (
+                  <Image key={idx} source={{ uri: imgUrl }} style={styles.historyImage} />
+                ))}
+              </ScrollView>
+            )}
 
             <View style={styles.requestFooter}>
               <View
@@ -494,5 +579,79 @@ const styles = StyleSheet.create({
     color: COLORS.red,
     fontSize: 13,
     fontWeight: "900",
+  },
+  roomSelectRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 2,
+  },
+  roomButton: {
+    paddingHorizontal: 16,
+    height: 42,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  roomActive: {
+    backgroundColor: COLORS.orange,
+    borderColor: COLORS.orange,
+  },
+  roomText: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: COLORS.muted,
+  },
+  roomTextActive: {
+    color: "#FFFFFF",
+  },
+  imagePreviewContainer: {
+    flexDirection: "row",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  imagePreviewBox: {
+    position: "relative",
+    marginRight: 10,
+  },
+  previewImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E8E9ED",
+  },
+  removeImageBtn: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: COLORS.red,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  removeImageText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
+    lineHeight: 16,
+  },
+  historyImagesContainer: {
+    flexDirection: "row",
+    marginTop: 10,
+    marginBottom: 2,
+  },
+  historyImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#E8E9ED",
   },
 });

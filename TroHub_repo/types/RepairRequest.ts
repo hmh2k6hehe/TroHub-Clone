@@ -6,8 +6,9 @@ export type RepairRequest = {
   id: string;
   room: string;
   type: string;
-  priority: Priority;
+  priority?: Priority;
   description: string;
   status: RepairStatus;
   createdAt: string;
+  images?: string[];
 };

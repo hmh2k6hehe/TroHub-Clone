@@ -104,7 +104,11 @@ const mapApiInvoiceToInvoice = (apiInvoice: ApiInvoice): Invoice => {
   const totalAmount = apiInvoice.totalAmount || 0;
   const roomFee = Math.max(totalAmount - serviceTotal, 0);
 
-  const isPaid = apiInvoice.status === 1;
+  const isPaid = apiInvoice.status === 2;
+  let statusText = "Chưa thanh toán";
+  if (apiInvoice.status === 2) statusText = "Đã thanh toán";
+  else if (apiInvoice.status === 3) statusText = "Quá hạn";
+  else if (apiInvoice.status === 0) statusText = "Nháp";
 
   return {
     id: apiInvoice._id,
@@ -112,7 +116,7 @@ const mapApiInvoiceToInvoice = (apiInvoice: ApiInvoice): Invoice => {
     room: apiInvoice.contractId?.roomId?.roomCode || "A101",
     amount: formatMoney(totalAmount),
     status: isPaid ? "paid" : "unpaid",
-    statusText: isPaid ? "Đã thanh toán" : "Chưa thanh toán",
+    statusText,
     dueDate: formatDate(apiInvoice.dueDate),
     details: {
       roomFee: formatMoney(roomFee),

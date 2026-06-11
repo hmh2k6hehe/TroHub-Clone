@@ -4,6 +4,7 @@ import { api } from "./api.js?v=19";
 const app = document.querySelector("#app");
 
 let state = {
+  theme: localStorage.getItem("trohub_theme") || "light",
   role: "guest",
   user: null,
   adminPage: "dashboard",
@@ -357,6 +358,9 @@ const renderAdminShell = (title, content, action = "Tạo hóa đơn") => `
         <div class="topbar-actions">
           <div class="search wide"><input type="text" placeholder="🔍 Tìm kiếm phòng, khách, hóa đơn..." value="${state.searchQuery}" data-global-search /></div>
           ${button(action, action.includes("phòng") ? "add-room" : action.includes("biểu đồ") ? "export-revenue-chart" : "create-invoice")}
+          <button class="icon-btn" data-theme-toggle title="Đổi giao diện">
+            ${state.theme === "dark" ? "☀️" : "🌙"}
+          </button>
           <button class="icon-btn">N</button>
           <div class="avatar">A</div>
         </div>
@@ -688,7 +692,19 @@ const renderContract = () => {
           ${dateField("Ngày kết thúc", state.contractEndDate, "contractEndDate")}
           ${moneyInputField("Tiền thuê", c.rent, "rent")}
           ${moneyInputField("Tiền cọc", c.deposit, "deposit")}
-          ${selectField("Trạng thái", c.status || "Chờ ký", ["Chờ ký", "Đang hiệu lực", "Đã kết thúc"], "status")}
+          ${(() => {
+            let options = ["Chờ ký"];
+            if (c.status === "Chờ chủ duyệt") {
+              options = ["Chờ chủ duyệt", "Đang hiệu lực"];
+            } else if (c.status === "Đang hiệu lực") {
+              options = ["Đang hiệu lực", "Đã kết thúc", "Đã hủy"];
+            } else if (c.status === "Đã kết thúc") {
+              options = ["Đã kết thúc"];
+            } else if (c.status === "Đã hủy") {
+              options = ["Đã hủy"];
+            }
+            return selectField("Trạng thái", c.status || "Chờ ký", options, "status");
+          })()}
         </div>
         <div class="form-actions" style="margin-top:16px;">
           ${button("Lưu nháp", "draft-contract", "outline")}
@@ -709,7 +725,7 @@ const renderContract = () => {
           ${arrays.contractHistory().map((item) => `<p>${item.id}: ${item.tenant} • ${item.startDate} - ${item.endDate} • ${item.status}</p>`).join("") || "<p>Chưa có lịch sử.</p>"}
         </div>
         <div class="form-actions">
-          ${button("Admin xác nhận hợp đồng", "admin-approve-contract")}
+          ${c.status === "Chờ chủ duyệt" ? button("Admin xác nhận hợp đồng", "admin-approve-contract") : ""}
           ${button("Xuất PDF", "export-pdf", "secondary")}
         </div>
       </article>
@@ -875,8 +891,9 @@ const renderInvoiceDetail = () => {
         <div class="total-line"><span>Tổng cộng</span><strong>${money(invoice.total || 0)}</strong></div>
         <div class="form-actions">
           ${button("Xuất PDF", "export-invoice-pdf", "outline")}
-          ${button("Đánh dấu đã thanh toán", "mark-paid")}
-          ${button("Gửi nhắc thanh toán", "send-reminder", "secondary")}
+          ${invoice.status === "Nháp" ? button("Gửi yêu cầu thanh toán", "send-invoice-payment-request") : ""}
+          ${invoice.status !== "Nháp" && invoice.status !== "Đã thanh toán" ? button("Đánh dấu đã thanh toán", "mark-paid") : ""}
+          ${invoice.status === "Chưa thanh toán" || invoice.status === "Quá hạn" ? button("Gửi nhắc thanh toán", "send-reminder", "secondary") : ""}
         </div>
       </article>
     </div>
@@ -990,7 +1007,12 @@ const renderRepairs = () => {
       <article class="card panel" data-form="repair">
         <h2>Chi tiết request</h2>
         <div class="repair-images">
-          ${selectedImages.map((image, index) => `<div>${index + 1}<span>${image}</span></div>`).join("") || "<div>0<span>Chưa có ảnh</span></div>"}
+          ${selectedImages.map((image, index) => {
+            const url = typeof image === 'string' ? image : (image.fileUrl || image.url || '');
+            return `<div style="position: relative; border: none; background: none; min-height: unset; height: auto;">
+              <img src="${url}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border);" alt="Ảnh sự cố ${index + 1}" />
+            </div>`;
+          }).join("") || "<div class='muted' style='grid-column: span 2; text-align: center; border: 1px dashed var(--border); padding: 20px; border-radius: 12px;'>Chưa có ảnh minh chứng</div>"}
         </div>
         <p><b>Người gửi:</b> ${selected.sender || '-'} • Phòng ${selected.room || '-'}</p>
         <p><b>Mô tả:</b> ${selected.description || "-"}</p>
@@ -1056,6 +1078,9 @@ const renderTenantShell = (title, content) => {
           </div>
           <div class="topbar-actions">
             <div class="search">Hợp đồng, hóa đơn, sửa chữa...</div>
+            <button class="icon-btn" data-theme-toggle title="Đổi giao diện">
+              ${state.theme === "dark" ? "☀️" : "🌙"}
+            </button>
             <div class="avatar">T</div>
           </div>
         </header>
@@ -1252,12 +1277,24 @@ const renderTenantPayments = () => renderTenantShell("Lịch sử thanh toán", 
   </article>
 `);
 
-const renderTenantRepairs = () => renderTenantShell("Yêu cầu sửa chữa", `
-  <div class="two-col">
-    <article class="card form-card" data-form="tenant-repair">
-      <h2>Gửi yêu cầu mới</h2>
-      ${selectField("Loại sự cố", "", ["Điện", "Nước", "Tường/Trần", "Thiết bị", "Nội thất", "Khác"], "category")}
-      ${textareaField("Mô tả chi tiết", "", "description")}
+const renderTenantRepairs = () => {
+  const rooms = tenantPortal().rooms || (tenantPortal().room ? [tenantPortal().room] : []);
+  const roomCodes = rooms.map(r => r.code || r.roomCode).filter(Boolean);
+
+  return renderTenantShell("Yêu cầu sửa chữa", `
+    <div class="two-col">
+      <article class="card form-card" data-form="tenant-repair">
+        <h2>Gửi yêu cầu mới</h2>
+        ${roomCodes.length <= 1 ? `
+          <label class="field">
+            <span>Phòng</span>
+            <input type="text" data-field="room" value="${roomCodes[0] || "Chưa có phòng"}" readonly style="background-color: var(--background-soft); color: var(--muted);" />
+          </label>
+        ` : `
+          ${selectField("Phòng", roomCodes[0], roomCodes, "room")}
+        `}
+        ${selectField("Loại sự cố", "", ["Điện", "Nước", "Tường/Trần", "Thiết bị", "Nội thất", "Khác"], "category")}
+        ${textareaField("Mô tả chi tiết", "", "description")}
       <label class="field">
         <span>Đính kèm hình ảnh minh chứng</span>
         <input type="file" data-field="images" accept="image/*" multiple style="padding: 10px; border: 1px dashed var(--border); border-radius: 8px; width: 100%; box-sizing: border-box;" />
@@ -1271,7 +1308,17 @@ const renderTenantRepairs = () => renderTenantShell("Yêu cầu sửa chữa", `
           <div class="repair-row">
             <strong>${repair.category} • ${repair.date}</strong>
             <span>${repair.description}</span>
-            ${badge(repair.status)} ${badge(`Ưu tiên: ${repair.priority}`)}
+            ${repair.images && repair.images.length > 0 ? `
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                ${repair.images.map((image, index) => {
+                  const url = typeof image === 'string' ? image : (image.fileUrl || image.url || '');
+                  return `<img src="${url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);" alt="Ảnh ${index + 1}" />`;
+                }).join("")}
+              </div>
+            ` : ''}
+            <div style="margin-top: 8px;">
+              ${badge(repair.status)} ${badge(`Ưu tiên: ${repair.priority}`)}
+            </div>
           </div>
         `).join("") || "<p class='muted'>Chưa có yêu cầu sửa chữa.</p>"}
       </div>
@@ -1407,6 +1454,7 @@ const renderAdmin = () => {
 };
 
 const render = () => {
+  document.documentElement.setAttribute("data-theme", state.theme || "light");
   app.innerHTML = state.role === "admin" ? renderAdmin() : state.role === "tenant" ? renderTenant() : renderLogin();
 };
 
@@ -1440,12 +1488,16 @@ const collectForm = (name) => {
   const payload = {};
   if (!root) return payload;
   root.querySelectorAll("[data-field]").forEach((fieldNode) => {
-    let value = fieldNode.value;
-    if (fieldNode.dataset.type === "money") {
-      value = numberValue(value.replace(/\D/g, ""));
-      payload[fieldNode.dataset.field] = value;
+    if (fieldNode.type === "file") {
+      payload[fieldNode.dataset.field] = fieldNode.filesData || [];
     } else {
-      payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
+      let value = fieldNode.value;
+      if (fieldNode.dataset.type === "money") {
+        value = numberValue(value.replace(/\D/g, ""));
+        payload[fieldNode.dataset.field] = value;
+      } else {
+        payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
+      }
     }
   });
   return payload;
@@ -1504,8 +1556,17 @@ const loadTenantData = async () => {
 const saveInvoice = async (status) => {
   const form = collectForm("invoice");
   const calc = calculateInvoice();
+
+  const roomName = state.selectedRoom || "";
+  const roomObj = arrays.rooms().find(r => r.id === roomName);
+  const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
+  const tenantObj = activeContract ? arrays.tenants().find(t => t.name === activeContract.tenant) : null;
+
   const payload = {
     ...form,
+    contractId: activeContract ? activeContract.id : null,
+    roomId: roomObj ? roomObj.objectId : "",
+    tenantUserId: tenantObj ? tenantObj.objectId : "",
     fromDate: form.createFrom || "",
     toDate: form.createTo || "",
     dueDate: form.createDue || "",
@@ -1618,6 +1679,14 @@ const handleAction = async (action) => {
     if (action === "create-invoice") return setState({ adminPage: "invoice-create" });
     if (action === "draft-invoice") return saveInvoice("Nháp");
     if (action === "export-month-invoice") return saveInvoice(state.calcPaidStatus);
+    if (action === "send-invoice-payment-request") {
+      const invoice = findInvoice();
+      if (!invoice.id) return showToast("Chưa có hóa đơn để gửi yêu cầu");
+      await api.invoices.update(invoice.objectId || invoice.id, { status: "Chưa thanh toán" });
+      await loadAllData();
+      setState({ adminPage: "invoice-detail" });
+      return showToast("Đã gửi yêu cầu thanh toán hóa đơn cho khách thuê!");
+    }
     if (action === "mark-paid") {
       const invoice = findInvoice();
       await api.invoices.markPaid(invoice.objectId || invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
@@ -1765,6 +1834,22 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const target = event.target;
+  if (target?.type === "file" && target?.dataset?.field === "images") {
+    const files = target.files;
+    const filePromises = Array.from(files).map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          resolve(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+    Promise.all(filePromises).then((results) => {
+      target.filesData = results;
+    });
+    return;
+  }
   if (!target?.dataset?.calcField) return;
   state = { ...state, [target.dataset.calcField]: target.value };
   updateInvoiceCalcOutputs();
@@ -1773,6 +1858,13 @@ app.addEventListener("change", (event) => {
 app.addEventListener("click", async (event) => {
   const target = event.target.closest("button, tr");
   if (!target) return;
+
+  if (target.dataset.themeToggle !== undefined) {
+    const newTheme = state.theme === "dark" ? "light" : "dark";
+    localStorage.setItem("trohub_theme", newTheme);
+    setState({ theme: newTheme });
+    return;
+  }
 
   if (target.dataset.tenantPay) {
     setState({ showQRForInvoice: target.dataset.tenantPay });

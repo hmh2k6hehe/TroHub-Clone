@@ -56,10 +56,10 @@ exports.getTenantPortal = async (req, res) => {
             };
         }
 
-        // Lấy hóa đơn theo hợp đồng hiệu lực
+        // Lấy hóa đơn theo hợp đồng hiệu lực (bỏ qua hóa đơn nháp status: 0)
         let invoices = [];
         if (activeContract) {
-            const rawInvoices = await Invoice.find({ contractId: activeContract._id }).sort({ createdAt: -1 });
+            const rawInvoices = await Invoice.find({ contractId: activeContract._id, status: { $ne: 0 } }).sort({ createdAt: -1 });
             invoices = rawInvoices.map(inv => ({
                 id: inv.invoiceCode || inv._id.toString(),
                 month: inv.period || '',
@@ -73,13 +73,13 @@ exports.getTenantPortal = async (req, res) => {
                 discount: inv.discount || 0,
                 penalty: inv.penalty || 0,
                 total: inv.totalAmount || 0,
-                status: ['Chưa thanh toán', 'Đã thanh toán', 'Quá hạn'][inv.status] || 'Chưa thanh toán'
+                status: ['Nháp', 'Chưa thanh toán', 'Đã thanh toán', 'Quá hạn'][inv.status] || 'Nháp'
             }));
         }
 
-        // Lấy tất cả hóa đơn kể cả không theo hợp đồng (room trực tiếp)
+        // Lấy tất cả hóa đơn kể cả không theo hợp đồng (bỏ qua hóa đơn nháp status: 0)
         if (invoices.length === 0 && roomInfo) {
-            const rawInvoices2 = await Invoice.find({ room: roomInfo.id }).sort({ createdAt: -1 });
+            const rawInvoices2 = await Invoice.find({ room: roomInfo.id, status: { $ne: 0 } }).sort({ createdAt: -1 });
             invoices = rawInvoices2.map(inv => ({
                 id: inv.invoiceCode || inv._id.toString(),
                 month: inv.period || '',
@@ -93,7 +93,7 @@ exports.getTenantPortal = async (req, res) => {
                 discount: inv.discount || 0,
                 penalty: inv.penalty || 0,
                 total: inv.totalAmount || 0,
-                status: ['Chưa thanh toán', 'Đã thanh toán', 'Quá hạn'][inv.status] || 'Chưa thanh toán'
+                status: ['Nháp', 'Chưa thanh toán', 'Đã thanh toán', 'Quá hạn'][inv.status] || 'Nháp'
             }));
         }
 
@@ -126,7 +126,8 @@ exports.getTenantPortal = async (req, res) => {
                 date: r.createdAt ? new Date(r.createdAt).toLocaleDateString('vi-VN') : '',
                 status: ['Mới', 'Đang xử lý', 'Hoàn thành', 'Đã hủy'][r.status] || 'Mới',
                 priority: ['Thấp', 'Vừa', 'Cao'][r.priority] || 'Thấp',
-                note: r.landlordNote || ''
+                note: r.landlordNote || '',
+                images: r.images || []
             }));
         }
 
@@ -248,12 +249,21 @@ exports.createRepair = async (req, res) => {
 
         const contractToUse = activeContract || await Contract.findOne({ tenantId }).sort({ createdAt: -1 });
 
+        let imagesArray = [];
+        if (Array.isArray(req.body.images)) {
+            imagesArray = req.body.images.map(img => {
+                if (typeof img === 'string') return img;
+                return img.fileUrl || img.url || '';
+            }).filter(Boolean);
+        }
+
         const newRepair = new RepairRequest({
             contractId: contractToUse._id,
             title: req.body.category || req.body.title || 'Yêu cầu sửa chữa',
             content: req.body.description || req.body.content || '',
             priority: 1,
-            status: 0
+            status: 0,
+            images: imagesArray
         });
         await newRepair.save();
 

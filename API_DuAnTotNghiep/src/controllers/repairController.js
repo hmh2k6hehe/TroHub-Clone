@@ -50,13 +50,22 @@ exports.createRequest = async (req, res) => {
             });
         }
 
+        let imagesArray = [];
+        if (Array.isArray(req.body.images)) {
+            imagesArray = req.body.images.map(img => {
+                if (typeof img === 'string') return img;
+                return img.fileUrl || img.url || '';
+            }).filter(Boolean);
+        }
+
         // 2. Lưu yêu cầu gắn liền với hợp đồng đó
         const newRequest = new RepairRequest({
             contractId: activeContract._id,
             title,
             content,
             priority: priority || 2, // Mặc định là 2 (Mức độ Vừa) nếu App không gửi
-            status: 0 // 0: Chờ xác nhận
+            status: 0, // 0: Chờ xác nhận
+            images: imagesArray
         });
 
         await newRequest.save();

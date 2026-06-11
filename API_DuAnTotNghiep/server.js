@@ -14,6 +14,7 @@ const seedRoute = require('./src/routes/seedRoute');
 const settingsRoute = require('./src/routes/settingsRoute');
 const meRoute = require('./src/routes/meRoute');
 const paymentRoute = require('./src/routes/paymentRoute');
+const serviceRoutes = require('./src/routes/serviceRoutes');
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use('/api/seed', seedRoute);
 app.use('/api/settings', settingsRoute);
 app.use('/api/me', meRoute);
 app.use('/api/payments', paymentRoute);
+app.use('/api/services', serviceRoutes);
 
 // 5. Khởi động Server
 const PORT = process.env.PORT || 5000;
