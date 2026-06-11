@@ -3,7 +3,8 @@
 ## Giới thiệu
 TroHub là hệ thống quản lý phòng trọ full-stack, gồm:
 - **Backend API**: Node.js + Express + MongoDB
-- **Frontend Web**: HTML + Vanilla JS (Vite)
+- **Frontend Web Admin**: HTML + Vanilla JS (Vite)
+- **Mobile App**: React Native (Expo Router, TypeScript) cho Người Thuê & Chủ Trọ
 
 ---
 
@@ -45,7 +46,24 @@ npm run dev
 # Web chạy tại: http://localhost:5173
 ```
 
-### 3. MongoDB
+### 3. Khởi động Mobile App (Expo)
+```bash
+# Từ thư mục gốc, di chuyển vào thư mục app
+cd TroHub_repo
+npm install
+npm run android # Mở máy ảo Android
+npm run ios     # Mở máy ảo iOS
+npm run web     # Mở giao diện trên trình duyệt
+```
+
+#### Thư viện cài đặt (Mobile)
+- `expo` (SDK 54)
+- `expo-router` (Điều hướng)
+- `react-native`
+- `@react-navigation/bottom-tabs` & `@react-navigation/native`
+- `@react-native-async-storage/async-storage`
+
+### 4. MongoDB
 - Cần chạy MongoDB local hoặc MongoDB Atlas
 - Cấu hình kết nối trong file `.env`:
 ```

@@ -132,8 +132,8 @@ export const api = {
     },
     create: (payload) => fetchAPI(API_CONFIG.ENDPOINTS.contracts, { method: "POST", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
     update: (id, payload) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}`, { method: "PUT", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
-    // Admin xác nhận hợp đồng = ký hợp đồng (status 0 → 1)
-    sign: (id) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}/sign`, { method: "PUT", body: JSON.stringify({}) }),
+    // Admin duyệt hợp đồng (status 4 → 1)
+    confirm: (id) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}/confirm`, { method: "PUT", body: JSON.stringify({}) }),
   },
   invoices: {
     getAll: async () => {

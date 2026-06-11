@@ -13,6 +13,7 @@ let state = {
   selectedInvoice: "HD0526-A101",
   selectedRepair: "",
   selectedContract: "",
+  dashboardFilter: "custom",
   dashboardFrom: "01/05/2026",
   dashboardTo: "31/05/2026",
   invoiceFrom: "01/05/2026",
@@ -366,32 +367,86 @@ const renderAdminShell = (title, content, action = "Tạo hóa đơn") => `
   ${state.toast ? `<div class="toast">${state.toast}</div>` : ""}
 `;
 
+const getDashboardRange = (filterType) => {
+  const now = new Date();
+  if (filterType === "this-month") {
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: formatDate(start), to: formatDate(end) };
+  }
+  if (filterType === "3-months") {
+    const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: formatDate(start), to: formatDate(end) };
+  }
+  if (filterType === "6-months") {
+    const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { from: formatDate(start), to: formatDate(end) };
+  }
+  return { from: state.dashboardFrom, to: state.dashboardTo };
+};
+
 const revenueSeries = () => {
   const totals = new Map();
+  const fromDate = parseDate(state.dashboardFrom);
+  const toDate = parseDate(state.dashboardTo);
+  
   arrays.payments()
-    .filter((payment) => payment.status === "Đã thanh toán")
-    .forEach((payment) => totals.set(payment.month, (totals.get(payment.month) || 0) + numberValue(payment.amount)));
-  const series = [...totals.entries()].map(([month, value]) => ({ month, value }));
-  return series.length ? series.slice(-6) : appData.paymentRevenue;
+    .filter((payment) => {
+      if (payment.status !== "Đã thanh toán") return false;
+      const dateStr = payment.date && payment.date !== "-" ? payment.date : (payment.month ? `01/${payment.month}` : "");
+      if (!dateStr) return false;
+      const payDate = parseDate(dateStr);
+      return payDate >= fromDate && payDate <= toDate;
+    })
+    .forEach((payment) => {
+      totals.set(payment.month, (totals.get(payment.month) || 0) + numberValue(payment.amount));
+    });
+    
+  const series = [...totals.entries()]
+    .map(([month, value]) => ({ month, value }))
+    .sort((a, b) => {
+      const [mA, yA] = a.month.split("/").map(Number);
+      const [mB, yB] = b.month.split("/").map(Number);
+      return yA - yB || mA - mB;
+    });
+    
+  return series.length ? series : appData.paymentRevenue;
 };
 
 const renderDashboard = () => {
   const rooms = arrays.rooms();
-  const invoices = arrays.invoices();
-  const repairs = arrays.repairs();
+  const fromDate = parseDate(state.dashboardFrom);
+  const toDate = parseDate(state.dashboardTo);
+  
+  const invoices = arrays.invoices().filter(invoice => {
+    const invDateStr = invoice.dueDate ? invoice.dueDate : (invoice.month ? `01/${invoice.month}` : "");
+    if (!invDateStr) return true;
+    const invDate = parseDate(invDateStr);
+    return invDate >= fromDate && invDate <= toDate;
+  });
+  
+  const repairs = arrays.repairs().filter(repair => {
+    if (!repair.date || repair.date === "-") return true;
+    const repDate = parseDate(repair.date);
+    return repDate >= fromDate && repDate <= toDate;
+  });
+  
   const totalRooms = rooms.length || 1;
   const occupied = rooms.filter((room) => room.status === "Đang thuê").length;
   const vacant = rooms.filter((room) => room.status === "Còn trống").length;
   const unpaidRooms = rooms.filter((room) => ["Chưa thanh toán", "Quá hạn"].includes(room.payment));
   const series = revenueSeries();
   const revenue = series.at(-1)?.value || 0;
+  const activeFilter = state.dashboardFilter || "custom";
 
   return renderAdminShell("Dashboard", `
     <div class="filter-row">
-      <button class="chip active">Tháng này</button>
-      <button class="chip">3 tháng</button>
-      <button class="chip">6 tháng</button>
-      <button class="chip">Tùy chọn ngày</button>
+      <button class="chip ${activeFilter === "this-month" ? "active" : ""}" data-action="dashboard-filter-this-month">Tháng này</button>
+      <button class="chip ${activeFilter === "3-months" ? "active" : ""}" data-action="dashboard-filter-3-months">3 tháng</button>
+      <button class="chip ${activeFilter === "6-months" ? "active" : ""}" data-action="dashboard-filter-6-months">6 tháng</button>
+      <button class="chip ${activeFilter === "custom" ? "active" : ""}" data-action="dashboard-filter-custom">Tùy chọn ngày</button>
       ${dateField("Từ ngày", state.dashboardFrom, "dashboardFrom")}
       ${dateField("Đến ngày", state.dashboardTo, "dashboardTo")}
       ${button("Áp dụng", "apply-dashboard-range")}
@@ -1554,7 +1609,7 @@ const handleAction = async (action) => {
     if (action === "admin-approve-contract") {
       const contract = findContract();
       if (!contract.id) return showToast("Chưa có hợp đồng để xác nhận");
-      await api.contracts.sign(contract.id);
+      await api.contracts.confirm(contract.id);
       await loadAllData();
       setState({ selectedContract: "" });
       return showToast("Admin đã xác nhận hợp đồng thành công!");
@@ -1605,9 +1660,26 @@ const handleAction = async (action) => {
       return showToast("Đã lưu cài đặt chủ trọ bằng API");
     }
 
-    if (action === "reset-dashboard-range") return setState({ dashboardFrom: "01/05/2026", dashboardTo: "31/05/2026", activeCalendar: "" });
+    if (action === "dashboard-filter-this-month") {
+      const range = getDashboardRange("this-month");
+      return setState({ dashboardFilter: "this-month", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
+    }
+    if (action === "dashboard-filter-3-months") {
+      const range = getDashboardRange("3-months");
+      return setState({ dashboardFilter: "3-months", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
+    }
+    if (action === "dashboard-filter-6-months") {
+      const range = getDashboardRange("6-months");
+      return setState({ dashboardFilter: "6-months", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
+    }
+    if (action === "dashboard-filter-custom") {
+      return setState({ dashboardFilter: "custom", activeCalendar: "" });
+    }
+
+    if (action === "reset-dashboard-range") return setState({ dashboardFrom: "01/05/2026", dashboardTo: "31/05/2026", dashboardFilter: "custom", activeCalendar: "" });
     if (action === "reset-invoice-filter") return setState({ invoiceFrom: "01/05/2026", invoiceTo: "31/05/2026", activeCalendar: "" });
-    if (action === "apply-dashboard-range" || action === "apply-invoice-filter") return setState({ activeCalendar: "" });
+    if (action === "apply-dashboard-range") return setState({ dashboardFilter: "custom", activeCalendar: "" });
+    if (action === "apply-invoice-filter") return setState({ activeCalendar: "" });
 
     // Tenant invoice filter buttons
     if (action === "tenant-filter-month") return setState({ tenantInvoiceFilter: "month" });

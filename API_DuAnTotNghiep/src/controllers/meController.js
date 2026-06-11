@@ -146,7 +146,7 @@ exports.getTenantPortal = async (req, res) => {
             endDate: c.endDate ? new Date(c.endDate).toLocaleDateString('vi-VN') : '',
             rent: c.fixedRentPrice || 0,
             deposit: c.fixedDeposit || 0,
-            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy'][c.status] || 'Chờ ký',
+            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy', 'Chờ chủ duyệt'][c.status] || 'Chờ ký',
             tenantAccepted: c.status > 0
         }));
 
@@ -194,14 +194,11 @@ exports.signContract = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Hợp đồng không ở trạng thái chờ ký!' });
         }
 
-        contract.status = 1;
+        contract.status = 4;
         contract.tenantConfirmedAt = new Date();
         await contract.save();
 
-        // Đổi phòng thành Đang thuê
-        await Room.findByIdAndUpdate(contract.roomId, { status: 1 });
-
-        res.status(200).json({ success: true, message: 'Đã ký hợp đồng thành công! Hợp đồng có hiệu lực.' });
+        res.status(200).json({ success: true, message: 'Đã ký hợp đồng thành công! Đang chờ chủ trọ duyệt và xác nhận để hợp đồng có hiệu lực.' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
     }

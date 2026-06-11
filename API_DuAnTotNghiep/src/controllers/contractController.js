@@ -71,9 +71,32 @@ exports.signContract = async (req, res) => {
             return res.status(400).json({ success: false, message: "Hợp đồng này không ở trạng thái chờ ký!" });
         }
 
-        // 1. Chuyển trạng thái hợp đồng thành Đang hiệu lực (1) và lưu vết thời gian ký
-        contract.status = 1;
+        // 1. Chuyển trạng thái hợp đồng thành Chờ duyệt (4) và lưu vết thời gian ký
+        contract.status = 4;
         contract.tenantConfirmedAt = new Date();
+        await contract.save();
+
+        res.status(200).json({ 
+            success: true, 
+            message: "Ký tên điện tử thành công! Chờ chủ trọ xác nhận duyệt hợp đồng." 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Lỗi khi ký hợp đồng: " + error.message });
+    }
+};
+
+// 4.1. Chủ trọ (Admin) duyệt xác nhận hợp đồng (Trên Web/App)
+exports.confirmContract = async (req, res) => {
+    try {
+        const contract = await Contract.findById(req.params.id);
+        
+        if (!contract) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng!" });
+        if (contract.status !== 4) {
+            return res.status(400).json({ success: false, message: "Hợp đồng này không ở trạng thái chờ duyệt!" });
+        }
+
+        // 1. Chuyển trạng thái hợp đồng thành Đang hiệu lực (1)
+        contract.status = 1;
         await contract.save();
 
         // 2. Chuyển trạng thái Phòng thành Đang thuê (1)
@@ -81,10 +104,11 @@ exports.signContract = async (req, res) => {
 
         res.status(200).json({ 
             success: true, 
-            message: "Ký tên điện tử thành công! Hợp đồng chính thức có hiệu lực." 
+            message: "Xác nhận duyệt hợp đồng thành công! Hợp đồng chính thức có hiệu lực.",
+            data: contract
         });
     } catch (error) {
-        res.status(500).json({ success: false, message: "Lỗi khi ký hợp đồng: " + error.message });
+        res.status(500).json({ success: false, message: "Lỗi khi xác nhận hợp đồng: " + error.message });
     }
 };
 

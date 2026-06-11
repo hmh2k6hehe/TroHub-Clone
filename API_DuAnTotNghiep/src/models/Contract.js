@@ -8,7 +8,7 @@ const contractSchema = new mongoose.Schema({
     fixedRentPrice: { type: Number, required: true }, // gia_thue_chot
     fixedDeposit: { type: Number, required: true },   // tien_coc_chot
     tenantConfirmedAt: { type: Date },                // thoi_gian_khach_xac_nhan
-    status: { type: Number, enum: [0, 1, 2, 3], default: 0 }, // 0: Chờ xác nhận, 1: Hiệu lực, 2: Hết hạn, 3: Hủy
+    status: { type: Number, enum: [0, 1, 2, 3, 4], default: 0 }, // 0: Chờ ký, 1: Hiệu lực, 2: Hết hạn, 3: Hủy, 4: Chờ chủ duyệt
     
     // Tuyệt chiêu Nhúng dữ liệu: Gộp bảng HOP_DONG_DICH_VU vào đây
     services: [{

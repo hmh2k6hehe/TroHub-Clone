@@ -77,3 +77,79 @@ exports.login = async (req, res) => {
         res.status(500).json({ success: false, message: "Lỗi Server khi đăng nhập: " + error.message });
     }
 };
+
+// 3. Lấy thông tin tài khoản hiện tại (GET /api/auth/me)
+exports.getMe = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập hoặc token không hợp lệ!' });
+        }
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        const account = await Account.findById(decoded.id);
+        if (!account) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản!' });
+        }
+        
+        res.status(200).json({
+            success: true,
+            user: {
+                id: account._id,
+                username: account.username,
+                fullName: account.fullName,
+                phone: account.phone,
+                email: account.email,
+                idCard: account.idCard,
+                role: account.role,
+                status: account.status
+            }
+        });
+    } catch (error) {
+        res.status(401).json({ success: false, message: 'Token không hợp lệ hoặc đã hết hạn: ' + error.message });
+    }
+};
+
+// 4. Cập nhật thông tin tài khoản hiện tại (PUT /api/auth/me)
+exports.updateMe = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'Bạn chưa đăng nhập hoặc token không hợp lệ!' });
+        }
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        const { fullName, phone, email, idCard } = req.body;
+        
+        const account = await Account.findById(decoded.id);
+        if (!account) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản!' });
+        }
+        
+        if (fullName !== undefined) account.fullName = fullName;
+        if (phone !== undefined) account.phone = phone;
+        if (email !== undefined) account.email = email;
+        if (idCard !== undefined) account.idCard = idCard;
+        
+        await account.save();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Cập nhật thông tin tài khoản thành công!',
+            user: {
+                id: account._id,
+                username: account.username,
+                fullName: account.fullName,
+                phone: account.phone,
+                email: account.email,
+                idCard: account.idCard,
+                role: account.role,
+                status: account.status
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi Server khi cập nhật thông tin: ' + error.message });
+    }
+};
