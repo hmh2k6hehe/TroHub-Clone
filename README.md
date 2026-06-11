@@ -10,21 +10,31 @@ TroHub là hệ thống quản lý phòng trọ full-stack, gồm:
 
 ## Cấu trúc dự án
 
-```
-trohub-web-only/
-├── API_DuAnTotNghiep/          # Backend Node.js
+```text
+trohub-web-only/                 <-- THƯ MỤC GỐC CHỨA TẤT CẢ
+│
+├── API_DuAnTotNghiep/           <-- 1. BACKEND API & DATABASE
 │   ├── src/
-│   │   ├── controllers/        # Logic xử lý
-│   │   ├── models/             # Schema MongoDB
-│   │   ├── routes/             # Định nghĩa API endpoints
-│   │   └── configs/            # Kết nối DB
-│   └── server.js               # Entry point Backend
-└── src/                        # Frontend
-    ├── app.js                  # Logic giao diện chính
-    ├── api.js                  # SDK gọi API
-    ├── api-config.js           # Cấu hình endpoints và data mappers
-    ├── data.js                 # Dữ liệu mẫu dự phòng
-    └── env.js                  # Biến môi trường
+│   │   ├── configs/             # Code kết nối Database (MongoDB)
+│   │   ├── controllers/         # Logic xử lý API
+│   │   ├── models/              # Schema định nghĩa cấu trúc Database
+│   │   └── routes/              # Các đường dẫn API (endpoints)
+│   ├── server.js                # Entry point Backend API
+│   └── package.json
+│
+├── src/                         <-- 2. WEB ADMIN (Dành cho Chủ trọ)
+│   ├── api.js                   # Code gọi API Backend
+│   ├── app.js                   # Code giao diện màn hình Admin chính
+│   ├── styles.css               # File CSS giao diện
+│   └── (index.html ở ngoài)     # Trang chủ của Web Admin
+│
+└── TroHub_repo/                 <-- 3. MOBILE APP (Chủ trọ & Người thuê)
+    ├── app/                     # File điều hướng màn hình (Expo Router)
+    ├── components/              # Các UI Component dùng chung
+    ├── screens/                 # Giao diện của App (Login, Hợp đồng, Hóa đơn...)
+    ├── services/                # Tương tác API với Backend
+    ├── types/                   # Định nghĩa kiểu dữ liệu (TypeScript)
+    └── package.json             # Cấu hình dự án Expo
 ```
 
 ---
@@ -37,13 +47,14 @@ cd API_DuAnTotNghiep
 npm install
 npm run dev
 # Server chạy tại: http://localhost:5000
+# (Đường dẫn gốc API: http://localhost:5000/api)
 ```
 
-### 2. Khởi động Frontend
+### 2. Khởi động Frontend (Web Admin)
 ```bash
 # Từ thư mục gốc trohub-web-only/
 npm run dev
-# Web chạy tại: http://localhost:5173
+# Web Admin chạy tại: http://localhost:5173
 ```
 
 ### 3. Khởi động Mobile App (Expo)
@@ -54,6 +65,7 @@ npm install
 npm run android # Mở máy ảo Android
 npm run ios     # Mở máy ảo iOS
 npm run web     # Mở giao diện trên trình duyệt
+# Mobile App (chế độ Web) chạy tại: http://localhost:8081 (hoặc 8082)
 ```
 
 #### Thư viện cài đặt (Mobile)
