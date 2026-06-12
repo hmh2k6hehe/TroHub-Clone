@@ -1,4 +1,4 @@
-import { API_CONFIG } from "./api-config.js?v=11";
+import { API_CONFIG } from "./api-config.js?v=13";
 
 /**
  * Hàm gọi API chung tự động đính kèm Token
@@ -132,7 +132,7 @@ export const api = {
     },
     create: (payload) => fetchAPI(API_CONFIG.ENDPOINTS.contracts, { method: "POST", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
     update: (id, payload) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}`, { method: "PUT", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
-    // Admin duyệt hợp đồng (status 4 → 1)
+    // Admin xác nhận hợp đồng (status 4 → 1)
     confirm: (id) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}/confirm`, { method: "PUT", body: JSON.stringify({}) }),
   },
   invoices: {

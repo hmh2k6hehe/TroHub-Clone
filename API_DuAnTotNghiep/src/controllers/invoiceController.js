@@ -292,12 +292,31 @@ exports.updateInvoice = async (req, res) => {
         const invoice = await Invoice.findById(req.params.id);
         if (!invoice) return res.status(404).json({ success: false, message: "Không tìm thấy hóa đơn!" });
 
+        let statusChangedToPaid = false;
+
         if (status !== undefined) {
             let statusNum = invoice.status;
             if (status === "Nháp" || status === 0 || Number(status) === 0) statusNum = 0;
             else if (status === "Chưa thanh toán" || status === 1 || Number(status) === 1) statusNum = 1;
             else if (status === "Đã thanh toán" || status === 2 || Number(status) === 2) statusNum = 2;
             else if (status === "Quá hạn" || status === 3 || Number(status) === 3) statusNum = 3;
+            
+            // Cờ để kiểm tra nếu chuyển từ trạng thái khác sang Đã thanh toán
+            if (statusNum === 2 && invoice.status !== 2) {
+                statusChangedToPaid = true;
+            }
+            
+            // Cờ để kiểm tra nếu chuyển từ trạng thái khác sang Quá hạn
+            if (statusNum === 3 && invoice.status !== 3) {
+                // Tự động tính phí phạt 5% nếu chưa có phí phạt
+                if (!invoice.penalty || invoice.penalty === 0) {
+                    const baseAmount = invoice.totalAmount || 0;
+                    const penaltyAmt = Math.round(baseAmount * 0.05);
+                    invoice.penalty = penaltyAmt;
+                    invoice.totalAmount = baseAmount + penaltyAmt;
+                }
+            }
+            
             invoice.status = statusNum;
         }
 
@@ -305,6 +324,19 @@ exports.updateInvoice = async (req, res) => {
         if (transactionCode !== undefined) invoice.transactionCode = transactionCode;
 
         await invoice.save();
+
+        // Tự động tạo giao dịch nếu đổi thành Đã thanh toán
+        if (statusChangedToPaid) {
+            const newTransaction = new Transaction({
+                invoiceId: invoice._id,
+                amount: invoice.totalAmount,
+                method: invoice.paymentMethod || 'Tiền mặt',
+                status: 1, // Thành công
+                gatewayReference: invoice.transactionCode || ''
+            });
+            await newTransaction.save();
+        }
+
         res.status(200).json({ success: true, message: "Cập nhật hóa đơn thành công!", data: invoice });
     } catch (error) {
         res.status(500).json({ success: false, message: "Lỗi khi cập nhật hóa đơn: " + error.message });

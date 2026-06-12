@@ -121,7 +121,7 @@ exports.updateContract = async (req, res) => {
         if (!existing) return res.status(404).json({ success: false, message: "Không tìm thấy hợp đồng!" });
 
         // Admin tạo hợp đồng phải thông qua người thuê ký (status = 4), nếu không thì không tự xác nhận thành Đang hiệu lực (1) được.
-        if (status !== undefined && Number(status) === 1 && existing.status !== 4) {
+        if (status !== undefined && Number(status) === 1 && existing.status !== 1 && existing.status !== 4) {
             return res.status(400).json({ success: false, message: "Khách thuê chưa ký hợp đồng này, Admin không thể xác nhận!" });
         }
 

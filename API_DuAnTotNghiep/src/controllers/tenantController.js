@@ -12,7 +12,18 @@ const bcrypt = require('bcryptjs');
 // 1. Lấy danh sách toàn bộ khách thuê (role = 2)
 exports.getAllTenants = async (req, res) => {
     try {
-        const tenants = await Account.find({ role: 2 }).sort({ createdAt: -1 });
+        const tenants = await Account.find({ role: 2 }).lean().sort({ createdAt: -1 });
+        
+        // Populate room from active contracts
+        const activeContracts = await Contract.find({ status: 1 }).populate('roomId', 'roomCode');
+        
+        for (let t of tenants) {
+            const contract = activeContracts.find(c => c.tenantId && c.tenantId.toString() === t._id.toString());
+            if (contract && contract.roomId) {
+                t.room = contract.roomId.roomCode;
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: "Lấy danh sách khách thuê thành công!",

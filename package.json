@@ -18,5 +18,8 @@
   "license": "MIT",
   "optionalDependencies": {
     "mongodb": "^6.20.0"
+  },
+  "dependencies": {
+    "acorn": "^8.17.0"
   }
 }

@@ -1,4 +1,4 @@
-import { ENV } from "./env.js?v=6";
+import { ENV } from "./env.js?v=7";
 
 export const API_CONFIG = {
   BASE_URL: ENV.API_URL,
@@ -77,7 +77,7 @@ export const API_CONFIG = {
     paymentMethod: apiData.paymentMethod || "",
     transactionCode: apiData.transactionCode || "-",
     total: apiData.totalAmount || apiData.total || 0,
-    status: ["Nháp", "Chưa thanh toán", "Đã thanh toán", "Quá hạn"][apiData.status] || "Nháp"
+    status: ["Chưa thanh toán", "Đã thanh toán", "Quá hạn"][apiData.status] || "Chưa thanh toán"
   }),
 
   // Yêu cầu sửa chữa
@@ -104,7 +104,7 @@ export const API_CONFIG = {
     endDate: apiData.endDate ? new Date(apiData.endDate).toLocaleDateString("vi-VN") : "",
     rent: apiData.fixedRentPrice || apiData.rent || 0,
     deposit: apiData.fixedDeposit || apiData.deposit || 0,
-    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ chủ duyệt"][apiData.status] || "Chờ ký",
+    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ duyệt"][apiData.status] || "Chờ ký",
     tenantAccepted: apiData.status > 0
   }),
 
@@ -134,24 +134,31 @@ export const API_CONFIG = {
   }),
 
   MAP_CONTRACT_PAYLOAD: (uiData) => {
-    const payload = {
+    // Map text status to number
+    const statusMap = {
+      "Chờ ký": 0,
+      "Đang hiệu lực": 1,
+      "Đã kết thúc": 2,
+      "Đã hủy": 3,
+      "Chờ duyệt": 4
+    };
+    
+    let statusCode = 0;
+    if (typeof uiData.status === "string" && statusMap[uiData.status] !== undefined) {
+        statusCode = statusMap[uiData.status];
+    } else if (typeof uiData.status === "number") {
+        statusCode = uiData.status;
+    }
+
+    return {
       roomId: uiData.room || "",
       tenantId: uiData.tenant || "",
       startDate: uiData.startDate || new Date().toISOString(),
       endDate: uiData.endDate || new Date().toISOString(),
       fixedRentPrice: uiData.rent || 0,
       fixedDeposit: uiData.deposit || 0,
-      services: []
+      status: statusCode
     };
-    if (uiData.status !== undefined) {
-      let statusNum = 0;
-      if (uiData.status === "Đang hiệu lực" || uiData.status === "Có hiệu lực" || uiData.status === 1) statusNum = 1;
-      else if (uiData.status === "Đã kết thúc" || uiData.status === "Hết hạn" || uiData.status === 2) statusNum = 2;
-      else if (uiData.status === "Đã hủy" || uiData.status === 3) statusNum = 3;
-      else if (uiData.status === "Chờ chủ duyệt" || uiData.status === 4) statusNum = 4;
-      payload.status = statusNum;
-    }
-    return payload;
   },
 
   MAP_REPAIR_PAYLOAD: (uiData) => ({

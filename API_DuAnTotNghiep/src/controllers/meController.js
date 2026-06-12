@@ -213,9 +213,9 @@ exports.payInvoice = async (req, res) => {
 
         const invoice = await Invoice.findById(req.params.invoiceId);
         if (!invoice) return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn!' });
-        if (invoice.status === 1) return res.status(400).json({ success: false, message: 'Hóa đơn đã được thanh toán!' });
+        if (invoice.status === 2) return res.status(400).json({ success: false, message: 'Hóa đơn đã được thanh toán!' });
 
-        invoice.status = 1;
+        invoice.status = 2;
         await invoice.save();
 
         const newTransaction = new Transaction({

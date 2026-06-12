@@ -1,10 +1,9 @@
 import { appData, money } from "./data.js";
-import { api } from "./api.js?v=19";
+import { api } from "./api.js?v=21";
 
 const app = document.querySelector("#app");
 
 let state = {
-  theme: localStorage.getItem("trohub_theme") || "light",
   role: "guest",
   user: null,
   adminPage: "dashboard",
@@ -14,7 +13,6 @@ let state = {
   selectedInvoice: "HD0526-A101",
   selectedRepair: "",
   selectedContract: "",
-  dashboardFilter: "custom",
   dashboardFrom: "01/05/2026",
   dashboardTo: "31/05/2026",
   invoiceFrom: "01/05/2026",
@@ -358,9 +356,6 @@ const renderAdminShell = (title, content, action = "Tạo hóa đơn") => `
         <div class="topbar-actions">
           <div class="search wide"><input type="text" placeholder="🔍 Tìm kiếm phòng, khách, hóa đơn..." value="${state.searchQuery}" data-global-search /></div>
           ${button(action, action.includes("phòng") ? "add-room" : action.includes("biểu đồ") ? "export-revenue-chart" : "create-invoice")}
-          <button class="icon-btn" data-theme-toggle title="Đổi giao diện">
-            ${state.theme === "dark" ? "☀️" : "🌙"}
-          </button>
           <button class="icon-btn">N</button>
           <div class="avatar">A</div>
         </div>
@@ -371,86 +366,32 @@ const renderAdminShell = (title, content, action = "Tạo hóa đơn") => `
   ${state.toast ? `<div class="toast">${state.toast}</div>` : ""}
 `;
 
-const getDashboardRange = (filterType) => {
-  const now = new Date();
-  if (filterType === "this-month") {
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: formatDate(start), to: formatDate(end) };
-  }
-  if (filterType === "3-months") {
-    const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: formatDate(start), to: formatDate(end) };
-  }
-  if (filterType === "6-months") {
-    const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return { from: formatDate(start), to: formatDate(end) };
-  }
-  return { from: state.dashboardFrom, to: state.dashboardTo };
-};
-
 const revenueSeries = () => {
   const totals = new Map();
-  const fromDate = parseDate(state.dashboardFrom);
-  const toDate = parseDate(state.dashboardTo);
-  
   arrays.payments()
-    .filter((payment) => {
-      if (payment.status !== "Đã thanh toán") return false;
-      const dateStr = payment.date && payment.date !== "-" ? payment.date : (payment.month ? `01/${payment.month}` : "");
-      if (!dateStr) return false;
-      const payDate = parseDate(dateStr);
-      return payDate >= fromDate && payDate <= toDate;
-    })
-    .forEach((payment) => {
-      totals.set(payment.month, (totals.get(payment.month) || 0) + numberValue(payment.amount));
-    });
-    
-  const series = [...totals.entries()]
-    .map(([month, value]) => ({ month, value }))
-    .sort((a, b) => {
-      const [mA, yA] = a.month.split("/").map(Number);
-      const [mB, yB] = b.month.split("/").map(Number);
-      return yA - yB || mA - mB;
-    });
-    
-  return series.length ? series : appData.paymentRevenue;
+    .filter((payment) => payment.status === "Đã thanh toán")
+    .forEach((payment) => totals.set(payment.month, (totals.get(payment.month) || 0) + numberValue(payment.amount)));
+  const series = [...totals.entries()].map(([month, value]) => ({ month, value }));
+  return series.length ? series.slice(-6) : appData.paymentRevenue;
 };
 
 const renderDashboard = () => {
   const rooms = arrays.rooms();
-  const fromDate = parseDate(state.dashboardFrom);
-  const toDate = parseDate(state.dashboardTo);
-  
-  const invoices = arrays.invoices().filter(invoice => {
-    const invDateStr = invoice.dueDate ? invoice.dueDate : (invoice.month ? `01/${invoice.month}` : "");
-    if (!invDateStr) return true;
-    const invDate = parseDate(invDateStr);
-    return invDate >= fromDate && invDate <= toDate;
-  });
-  
-  const repairs = arrays.repairs().filter(repair => {
-    if (!repair.date || repair.date === "-") return true;
-    const repDate = parseDate(repair.date);
-    return repDate >= fromDate && repDate <= toDate;
-  });
-  
+  const invoices = arrays.invoices();
+  const repairs = arrays.repairs();
   const totalRooms = rooms.length || 1;
   const occupied = rooms.filter((room) => room.status === "Đang thuê").length;
   const vacant = rooms.filter((room) => room.status === "Còn trống").length;
   const unpaidRooms = rooms.filter((room) => ["Chưa thanh toán", "Quá hạn"].includes(room.payment));
   const series = revenueSeries();
   const revenue = series.at(-1)?.value || 0;
-  const activeFilter = state.dashboardFilter || "custom";
 
   return renderAdminShell("Dashboard", `
     <div class="filter-row">
-      <button class="chip ${activeFilter === "this-month" ? "active" : ""}" data-action="dashboard-filter-this-month">Tháng này</button>
-      <button class="chip ${activeFilter === "3-months" ? "active" : ""}" data-action="dashboard-filter-3-months">3 tháng</button>
-      <button class="chip ${activeFilter === "6-months" ? "active" : ""}" data-action="dashboard-filter-6-months">6 tháng</button>
-      <button class="chip ${activeFilter === "custom" ? "active" : ""}" data-action="dashboard-filter-custom">Tùy chọn ngày</button>
+      <button class="chip active">Tháng này</button>
+      <button class="chip">3 tháng</button>
+      <button class="chip">6 tháng</button>
+      <button class="chip">Tùy chọn ngày</button>
       ${dateField("Từ ngày", state.dashboardFrom, "dashboardFrom")}
       ${dateField("Đến ngày", state.dashboardTo, "dashboardTo")}
       ${button("Áp dụng", "apply-dashboard-range")}
@@ -458,9 +399,25 @@ const renderDashboard = () => {
     </div>
     <div class="metric-grid">
       <article class="metric card"><span>Tổng số phòng</span><strong>${rooms.length}</strong><small>Toàn bộ hệ thống</small></article>
-      <article class="metric card"><span>Phòng đang thuê</span><strong>${occupied}</strong><small>${Math.round(occupied / totalRooms * 100)}% công suất</small></article>
+      <article class="metric card"><span>Phòng đang thuê</span><strong>${occupied}</strong><small>${Math.round((occupied / totalRooms) * 100)}% công suất</small></article>
       <article class="metric card"><span>Phòng trống</span><strong>${vacant}</strong><small>Cần đăng tin / cho thuê</small></article>
       <article class="metric card"><span>Yêu cầu sửa chữa</span><strong>${repairs.length}</strong><small>Admin phân độ ưu tiên</small></article>
+    </div>
+    
+    <h2 style="margin: 24px 0 16px;">Lối tắt nhanh</h2>
+    <div class="metric-grid" style="margin-bottom: 24px;">
+      <article class="metric card" style="cursor:pointer; align-items:center;" data-action="add-room">
+        <strong>Thêm phòng</strong><small>Tạo phòng mới</small>
+      </article>
+      <article class="metric card" style="cursor:pointer; align-items:center;" data-admin-nav="contract">
+        <strong>Tạo hợp đồng</strong><small>Cho khách mới</small>
+      </article>
+      <article class="metric card" style="cursor:pointer; align-items:center;" data-admin-nav="invoices">
+        <strong>Tạo hóa đơn</strong><small>Ghi điện nước</small>
+      </article>
+      <article class="metric card" style="cursor:pointer; align-items:center;" data-admin-nav="repairs">
+        <strong>Sửa chữa</strong><small>Xử lý sự cố</small>
+      </article>
     </div>
     <div class="dash-grid">
       <article class="card panel">
@@ -692,19 +649,7 @@ const renderContract = () => {
           ${dateField("Ngày kết thúc", state.contractEndDate, "contractEndDate")}
           ${moneyInputField("Tiền thuê", c.rent, "rent")}
           ${moneyInputField("Tiền cọc", c.deposit, "deposit")}
-          ${(() => {
-            let options = ["Chờ ký"];
-            if (c.status === "Chờ chủ duyệt") {
-              options = ["Chờ chủ duyệt", "Đang hiệu lực"];
-            } else if (c.status === "Đang hiệu lực") {
-              options = ["Đang hiệu lực", "Đã kết thúc", "Đã hủy"];
-            } else if (c.status === "Đã kết thúc") {
-              options = ["Đã kết thúc"];
-            } else if (c.status === "Đã hủy") {
-              options = ["Đã hủy"];
-            }
-            return selectField("Trạng thái", c.status || "Chờ ký", options, "status");
-          })()}
+          ${selectField("Trạng thái", c.status || "Chờ ký", ["Chờ ký", "Đang hiệu lực", "Đã kết thúc"], "status")}
         </div>
         <div class="form-actions" style="margin-top:16px;">
           ${button("Lưu nháp", "draft-contract", "outline")}
@@ -725,7 +670,7 @@ const renderContract = () => {
           ${arrays.contractHistory().map((item) => `<p>${item.id}: ${item.tenant} • ${item.startDate} - ${item.endDate} • ${item.status}</p>`).join("") || "<p>Chưa có lịch sử.</p>"}
         </div>
         <div class="form-actions">
-          ${c.status === "Chờ chủ duyệt" ? button("Admin xác nhận hợp đồng", "admin-approve-contract") : ""}
+          ${c.status === "Chờ duyệt" ? button("Admin xác nhận hợp đồng", "admin-approve-contract") : ""}
           ${button("Xuất PDF", "export-pdf", "secondary")}
         </div>
       </article>
@@ -779,16 +724,37 @@ const renderInvoices = () => renderAdminShell("Quản lý hóa đơn", `
 
 const renderInvoiceCreate = () => {
   const calc = calculateInvoice();
-  const roomName = state.selectedRoom || "";
+  let roomName = state.room || state.selectedRoom || "";
   let tenantName = "";
+  let autoRent = 0;
+  let autoElectricityOld = 0;
+  let autoWaterOld = 0;
+
   if (roomName) {
     const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
     if (activeContract) {
       tenantName = activeContract.tenant;
+      autoRent = activeContract.rent;
     } else {
       const roomObj = arrays.rooms().find(r => r.id === roomName);
       if (roomObj && roomObj.tenant) tenantName = roomObj.tenant;
+      if (roomObj && roomObj.rent) autoRent = roomObj.rent;
     }
+
+    // Tự động kéo chỉ số điện/nước mới của tháng trước sang tháng này
+    const allRoomInvoices = arrays.invoices().filter(inv => inv.room === roomName).sort((a, b) => b.id.localeCompare(a.id));
+    if (allRoomInvoices.length > 0) {
+      autoElectricityOld = allRoomInvoices[0].electricityNew || 0;
+      autoWaterOld = allRoomInvoices[0].waterNew || 0;
+    }
+  }
+
+  // Auto-populate rent and old indexes when room changes
+  if (roomName !== state.lastInvoiceRoom) {
+      state.calcRoomAmount = autoRent || 0;
+      state.calcElectricityOld = autoElectricityOld;
+      state.calcWaterOld = autoWaterOld;
+      state.lastInvoiceRoom = roomName;
   }
 
   return renderAdminShell("Tạo hóa đơn", `
@@ -797,14 +763,14 @@ const renderInvoiceCreate = () => {
         <h2>Xuất hóa đơn tháng này</h2>
         <p class="muted">Nhập chỉ số điện nước cũ / mới, hệ thống tự tính tiêu thụ và tổng tiền hóa đơn.</p>
         <div class="form-grid">
-          ${field("Phòng", roomName, "text", "room")}
+          ${selectField("Chọn phòng", roomName, ["", ...arrays.rooms().map(r => r.id)], "room")}
           ${field("Khách thuê", tenantName, "text", "tenant")}
           ${dateField("Từ ngày", state.createFrom, "createFrom")}
           ${dateField("Đến ngày", state.createTo, "createTo")}
           ${dateField("Hạn thanh toán", state.createDue, "createDue")}
           ${dateField("Ngày xuất hóa đơn", state.createExportDate, "createExportDate")}
           ${dateField("Ngày kiểm tra thanh toán", state.createCheckDate, "createCheckDate")}
-          ${calcSelectField("Trạng thái thanh toán", "calcPaidStatus", ["Chưa thanh toán", "Đã thanh toán"])}
+          ${calcSelectField("Trạng thái thanh toán", "calcPaidStatus", ["Chưa thanh toán"])}
           ${calcField("Tiền phòng", "calcRoomAmount")}
           ${calcField("Chỉ số điện cũ", "calcElectricityOld")}
           ${calcField("Chỉ số điện mới", "calcElectricityNew")}
@@ -842,7 +808,6 @@ const renderInvoiceCreate = () => {
         </div>
         <p class="muted" data-calc-output="penaltyNote">${calc.isLate ? "Hóa đơn đã quá 7 ngày và chưa thanh toán, hệ thống áp dụng phạt 10%." : "Chưa áp dụng phạt vì còn trong 7 ngày hoặc đã thanh toán."}</p>
         <div class="form-actions">
-          ${button("Lưu nháp", "draft-invoice", "outline")}
           ${button("Tạo hóa đơn", "export-month-invoice")}
           ${button("Xuất PDF", "export-invoice-pdf", "secondary")}
         </div>
@@ -862,6 +827,17 @@ const renderInvoiceDetail = () => {
     ["Phí phạt", invoice.penalty]
   ];
   return renderAdminShell("Chi tiết hóa đơn", `
+    <div class="detail-header card">
+      <div>
+        <h2>${invoice.id || "-"}</h2>
+        ${badge(invoice.status || "-")}
+      </div>
+      <div class="actions">
+        ${invoice.status !== "Đã thanh toán" ? button("Đánh dấu đã thu", "mark-paid") : ""}
+        ${button("Sửa", "edit-invoice", "outline")}
+        ${button("In", "print-invoice", "outline")}
+      </div>
+    </div>
     <div class="two-col">
       <article class="card panel">
         <h2>Thông tin hóa đơn</h2>
@@ -876,6 +852,11 @@ const renderInvoiceDetail = () => {
           <div><dt>Phương thức TT</dt><dd>${invoice.paymentMethod || "-"}</dd></div>
           <div><dt>Mã giao dịch</dt><dd>${invoice.transactionCode || "-"}</dd></div>
         </dl>
+        <div class="form-grid">
+          ${selectField("Trạng thái", invoice.status, ["Chưa thanh toán", "Đã thanh toán", "Quá hạn"], "status")}
+          ${selectField("P.Thức thanh toán", invoice.paymentMethod, ["Tiền mặt", "Chuyển khoản", "Thẻ", "Khác"], "paymentMethod")}
+          ${field("Mã giao dịch", invoice.transactionCode, "text", "transactionCode")}
+        </div>
       </article>
       <article class="card panel">
         <h2>Chi tiết tiền</h2>
@@ -891,9 +872,7 @@ const renderInvoiceDetail = () => {
         <div class="total-line"><span>Tổng cộng</span><strong>${money(invoice.total || 0)}</strong></div>
         <div class="form-actions">
           ${button("Xuất PDF", "export-invoice-pdf", "outline")}
-          ${invoice.status === "Nháp" ? button("Gửi yêu cầu thanh toán", "send-invoice-payment-request") : ""}
-          ${invoice.status !== "Nháp" && invoice.status !== "Đã thanh toán" ? button("Đánh dấu đã thanh toán", "mark-paid") : ""}
-          ${invoice.status === "Chưa thanh toán" || invoice.status === "Quá hạn" ? button("Gửi nhắc thanh toán", "send-reminder", "secondary") : ""}
+          ${button("Gửi nhắc thanh toán", "send-reminder", "secondary")}
         </div>
       </article>
     </div>
@@ -1007,12 +986,7 @@ const renderRepairs = () => {
       <article class="card panel" data-form="repair">
         <h2>Chi tiết request</h2>
         <div class="repair-images">
-          ${selectedImages.map((image, index) => {
-            const url = typeof image === 'string' ? image : (image.fileUrl || image.url || '');
-            return `<div style="position: relative; border: none; background: none; min-height: unset; height: auto;">
-              <img src="${url}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border);" alt="Ảnh sự cố ${index + 1}" />
-            </div>`;
-          }).join("") || "<div class='muted' style='grid-column: span 2; text-align: center; border: 1px dashed var(--border); padding: 20px; border-radius: 12px;'>Chưa có ảnh minh chứng</div>"}
+          ${selectedImages.map((image, index) => `<div>${index + 1}<span>${image}</span></div>`).join("") || "<div>0<span>Chưa có ảnh</span></div>"}
         </div>
         <p><b>Người gửi:</b> ${selected.sender || '-'} • Phòng ${selected.room || '-'}</p>
         <p><b>Mô tả:</b> ${selected.description || "-"}</p>
@@ -1048,6 +1022,7 @@ const tenantSidebarItems = [
   ["overview", "Tổng quan"],
   ["contract", "Hợp đồng"],
   ["invoices", "Hóa đơn"],
+  ["utilities", "Điện nước"],
   ["payments", "Thanh toán"],
   ["repairs", "Sửa chữa"],
   ["stats", "Thống kê phí"]
@@ -1078,9 +1053,6 @@ const renderTenantShell = (title, content) => {
           </div>
           <div class="topbar-actions">
             <div class="search">Hợp đồng, hóa đơn, sửa chữa...</div>
-            <button class="icon-btn" data-theme-toggle title="Đổi giao diện">
-              ${state.theme === "dark" ? "☀️" : "🌙"}
-            </button>
             <div class="avatar">T</div>
           </div>
         </header>
@@ -1277,24 +1249,12 @@ const renderTenantPayments = () => renderTenantShell("Lịch sử thanh toán", 
   </article>
 `);
 
-const renderTenantRepairs = () => {
-  const rooms = tenantPortal().rooms || (tenantPortal().room ? [tenantPortal().room] : []);
-  const roomCodes = rooms.map(r => r.code || r.roomCode).filter(Boolean);
-
-  return renderTenantShell("Yêu cầu sửa chữa", `
-    <div class="two-col">
-      <article class="card form-card" data-form="tenant-repair">
-        <h2>Gửi yêu cầu mới</h2>
-        ${roomCodes.length <= 1 ? `
-          <label class="field">
-            <span>Phòng</span>
-            <input type="text" data-field="room" value="${roomCodes[0] || "Chưa có phòng"}" readonly style="background-color: var(--background-soft); color: var(--muted);" />
-          </label>
-        ` : `
-          ${selectField("Phòng", roomCodes[0], roomCodes, "room")}
-        `}
-        ${selectField("Loại sự cố", "", ["Điện", "Nước", "Tường/Trần", "Thiết bị", "Nội thất", "Khác"], "category")}
-        ${textareaField("Mô tả chi tiết", "", "description")}
+const renderTenantRepairs = () => renderTenantShell("Yêu cầu sửa chữa", `
+  <div class="two-col">
+    <article class="card form-card" data-form="tenant-repair">
+      <h2>Gửi yêu cầu mới</h2>
+      ${selectField("Loại sự cố", "", ["Điện", "Nước", "Tường/Trần", "Thiết bị", "Nội thất", "Khác"], "category")}
+      ${textareaField("Mô tả chi tiết", "", "description")}
       <label class="field">
         <span>Đính kèm hình ảnh minh chứng</span>
         <input type="file" data-field="images" accept="image/*" multiple style="padding: 10px; border: 1px dashed var(--border); border-radius: 8px; width: 100%; box-sizing: border-box;" />
@@ -1308,17 +1268,7 @@ const renderTenantRepairs = () => {
           <div class="repair-row">
             <strong>${repair.category} • ${repair.date}</strong>
             <span>${repair.description}</span>
-            ${repair.images && repair.images.length > 0 ? `
-              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
-                ${repair.images.map((image, index) => {
-                  const url = typeof image === 'string' ? image : (image.fileUrl || image.url || '');
-                  return `<img src="${url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);" alt="Ảnh ${index + 1}" />`;
-                }).join("")}
-              </div>
-            ` : ''}
-            <div style="margin-top: 8px;">
-              ${badge(repair.status)} ${badge(`Ưu tiên: ${repair.priority}`)}
-            </div>
+            ${badge(repair.status)} ${badge(`Ưu tiên: ${repair.priority}`)}
           </div>
         `).join("") || "<p class='muted'>Chưa có yêu cầu sửa chữa.</p>"}
       </div>
@@ -1351,11 +1301,55 @@ const renderTenantStats = () => {
   `);
 };
 
+const renderTenantUtilities = () => {
+  const invoices = tenantInvoices();
+  const current = invoices[0];
+  
+  const historyHtml = invoices.map(item => `
+    <article class="card list-item" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h3 style="margin:0 0 4px">Tháng ${item.month}</h3>
+        <p class="muted" style="margin:0">Điện: ${(item.electricityNew || 0) - (item.electricityOld || 0)} kWh • Nước: ${(item.waterNew || 0) - (item.waterOld || 0)} m³</p>
+      </div>
+      <div style="text-align:right">
+        <strong style="color:var(--primary); font-size:1.1em">${money((item.electricity || 0) + (item.water || 0))}</strong>
+      </div>
+    </article>
+  `).join("");
+
+  return renderTenantShell("Điện nước", `
+    <p class="muted">Theo dõi chỉ số điện nước và chi phí sử dụng hằng tháng.</p>
+    ${current ? `
+      <div class="metric-grid" style="margin-top:20px">
+        <article class="metric card"><span>Điện đã dùng</span><strong>${(current.electricityNew || 0) - (current.electricityOld || 0)} kWh</strong><small>${money(current.electricity)}</small></article>
+        <article class="metric card"><span>Nước đã dùng</span><strong>${(current.waterNew || 0) - (current.waterOld || 0)} m³</strong><small>${money(current.water)}</small></article>
+      </div>
+      <article class="card panel">
+        <h2>Tháng ${current.month}</h2>
+        <dl class="info-list">
+          <div><dt>Chỉ số điện cũ</dt><dd>${current.electricityOld || 0}</dd></div>
+          <div><dt>Chỉ số điện mới</dt><dd>${current.electricityNew || 0}</dd></div>
+          <div style="border-bottom:1px solid var(--border); padding-bottom:8px"><dt>Tiền điện</dt><dd>${money(current.electricity)}</dd></div>
+          <div style="padding-top:8px"><dt>Chỉ số nước cũ</dt><dd>${current.waterOld || 0}</dd></div>
+          <div><dt>Chỉ số nước mới</dt><dd>${current.waterNew || 0}</dd></div>
+          <div><dt>Tiền nước</dt><dd>${money(current.water)}</dd></div>
+        </dl>
+      </article>
+    ` : `<article class="card panel" style="text-align:center"><p class="muted">Chưa có dữ liệu điện nước.</p></article>`}
+    
+    <h2 style="margin: 24px 0 16px;">Lịch sử điện nước</h2>
+    <div class="list-stack">
+      ${historyHtml || '<p class="muted">Không có lịch sử.</p>'}
+    </div>
+  `);
+};
+
 const renderTenant = () => {
   const pages = {
     overview: renderTenantOverview,
     contract: renderTenantContract,
     invoices: renderTenantInvoices,
+    utilities: renderTenantUtilities,
     payments: renderTenantPayments,
     repairs: renderTenantRepairs,
     stats: renderTenantStats
@@ -1454,7 +1448,6 @@ const renderAdmin = () => {
 };
 
 const render = () => {
-  document.documentElement.setAttribute("data-theme", state.theme || "light");
   app.innerHTML = state.role === "admin" ? renderAdmin() : state.role === "tenant" ? renderTenant() : renderLogin();
 };
 
@@ -1488,16 +1481,12 @@ const collectForm = (name) => {
   const payload = {};
   if (!root) return payload;
   root.querySelectorAll("[data-field]").forEach((fieldNode) => {
-    if (fieldNode.type === "file") {
-      payload[fieldNode.dataset.field] = fieldNode.filesData || [];
+    let value = fieldNode.value;
+    if (fieldNode.dataset.type === "money") {
+      value = numberValue(value.replace(/\D/g, ""));
+      payload[fieldNode.dataset.field] = value;
     } else {
-      let value = fieldNode.value;
-      if (fieldNode.dataset.type === "money") {
-        value = numberValue(value.replace(/\D/g, ""));
-        payload[fieldNode.dataset.field] = value;
-      } else {
-        payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
-      }
+      payload[fieldNode.dataset.field] = fieldNode.type === "number" ? numberValue(value) : value.trim();
     }
   });
   return payload;
@@ -1556,17 +1545,8 @@ const loadTenantData = async () => {
 const saveInvoice = async (status) => {
   const form = collectForm("invoice");
   const calc = calculateInvoice();
-
-  const roomName = state.selectedRoom || "";
-  const roomObj = arrays.rooms().find(r => r.id === roomName);
-  const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
-  const tenantObj = activeContract ? arrays.tenants().find(t => t.name === activeContract.tenant) : null;
-
   const payload = {
     ...form,
-    contractId: activeContract ? activeContract.id : null,
-    roomId: roomObj ? roomObj.objectId : "",
-    tenantUserId: tenantObj ? tenantObj.objectId : "",
     fromDate: form.createFrom || "",
     toDate: form.createTo || "",
     dueDate: form.createDue || "",
@@ -1626,6 +1606,31 @@ const handleAction = async (action) => {
       return showToast("Đã xóa phòng bằng API");
     }
 
+    if (action === "mark-paid") {
+      const invoice = findInvoice();
+      if (!invoice) return;
+      await api.invoices.markPaid(invoice.objectId || invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
+      await loadAllData();
+      renderApp();
+      return;
+    }
+
+    if (action === "print-invoice") {
+      window.print();
+      return;
+    }
+
+    if (action === "send-reminder") {
+      const invoice = findInvoice();
+      if (!invoice) return;
+      // Chuyển trạng thái sang Quá hạn khi bấm gửi lời nhắc
+      await api.invoices.update(invoice.objectId || invoice.id, { status: "Quá hạn" });
+      alert("Đã gửi lời nhắc và chuyển trạng thái sang Quá hạn!");
+      await loadAllData();
+      renderApp();
+      return;
+    }
+
     if (action === "add-contract") {
       setState({ 
         selectedContract: "",
@@ -1673,20 +1678,11 @@ const handleAction = async (action) => {
       await api.contracts.confirm(contract.id);
       await loadAllData();
       setState({ selectedContract: "" });
-      return showToast("Admin đã xác nhận hợp đồng thành công!");
+      return showToast("Admin đã xác nhận hợp đồng thành công! Khách đã được gắn phòng.");
     }
 
     if (action === "create-invoice") return setState({ adminPage: "invoice-create" });
-    if (action === "draft-invoice") return saveInvoice("Nháp");
-    if (action === "export-month-invoice") return saveInvoice(state.calcPaidStatus);
-    if (action === "send-invoice-payment-request") {
-      const invoice = findInvoice();
-      if (!invoice.id) return showToast("Chưa có hóa đơn để gửi yêu cầu");
-      await api.invoices.update(invoice.objectId || invoice.id, { status: "Chưa thanh toán" });
-      await loadAllData();
-      setState({ adminPage: "invoice-detail" });
-      return showToast("Đã gửi yêu cầu thanh toán hóa đơn cho khách thuê!");
-    }
+    if (action === "export-month-invoice") return saveInvoice("Chưa thanh toán");
     if (action === "mark-paid") {
       const invoice = findInvoice();
       await api.invoices.markPaid(invoice.objectId || invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
@@ -1729,26 +1725,9 @@ const handleAction = async (action) => {
       return showToast("Đã lưu cài đặt chủ trọ bằng API");
     }
 
-    if (action === "dashboard-filter-this-month") {
-      const range = getDashboardRange("this-month");
-      return setState({ dashboardFilter: "this-month", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
-    }
-    if (action === "dashboard-filter-3-months") {
-      const range = getDashboardRange("3-months");
-      return setState({ dashboardFilter: "3-months", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
-    }
-    if (action === "dashboard-filter-6-months") {
-      const range = getDashboardRange("6-months");
-      return setState({ dashboardFilter: "6-months", dashboardFrom: range.from, dashboardTo: range.to, activeCalendar: "" });
-    }
-    if (action === "dashboard-filter-custom") {
-      return setState({ dashboardFilter: "custom", activeCalendar: "" });
-    }
-
-    if (action === "reset-dashboard-range") return setState({ dashboardFrom: "01/05/2026", dashboardTo: "31/05/2026", dashboardFilter: "custom", activeCalendar: "" });
+    if (action === "reset-dashboard-range") return setState({ dashboardFrom: "01/05/2026", dashboardTo: "31/05/2026", activeCalendar: "" });
     if (action === "reset-invoice-filter") return setState({ invoiceFrom: "01/05/2026", invoiceTo: "31/05/2026", activeCalendar: "" });
-    if (action === "apply-dashboard-range") return setState({ dashboardFilter: "custom", activeCalendar: "" });
-    if (action === "apply-invoice-filter") return setState({ activeCalendar: "" });
+    if (action === "apply-dashboard-range" || action === "apply-invoice-filter") return setState({ activeCalendar: "" });
 
     // Tenant invoice filter buttons
     if (action === "tenant-filter-month") return setState({ tenantInvoiceFilter: "month" });
@@ -1834,22 +1813,15 @@ app.addEventListener("input", (event) => {
 
 app.addEventListener("change", (event) => {
   const target = event.target;
-  if (target?.type === "file" && target?.dataset?.field === "images") {
-    const files = target.files;
-    const filePromises = Array.from(files).map((file) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve(reader.result);
-        };
-        reader.readAsDataURL(file);
-      });
-    });
-    Promise.all(filePromises).then((results) => {
-      target.filesData = results;
-    });
+  
+  // Tự động tải lại form Tạo Hóa Đơn khi chọn Phòng
+  if (target.dataset.field === "room" && state.adminPage === "invoice-create") {
+    state.room = target.value;
+    state.selectedRoom = target.value;
+    renderApp();
     return;
   }
+
   if (!target?.dataset?.calcField) return;
   state = { ...state, [target.dataset.calcField]: target.value };
   updateInvoiceCalcOutputs();
@@ -1858,13 +1830,6 @@ app.addEventListener("change", (event) => {
 app.addEventListener("click", async (event) => {
   const target = event.target.closest("button, tr");
   if (!target) return;
-
-  if (target.dataset.themeToggle !== undefined) {
-    const newTheme = state.theme === "dark" ? "light" : "dark";
-    localStorage.setItem("trohub_theme", newTheme);
-    setState({ theme: newTheme });
-    return;
-  }
 
   if (target.dataset.tenantPay) {
     setState({ showQRForInvoice: target.dataset.tenantPay });

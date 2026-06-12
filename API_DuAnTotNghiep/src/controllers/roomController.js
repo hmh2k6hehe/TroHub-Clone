@@ -8,7 +8,19 @@ exports.getAllRooms = async (req, res) => {
         let query = {};
         if (landlordId) query.landlordId = landlordId;
 
-        const rooms = await Room.find(query).sort({ createdAt: -1 });
+        const rooms = await Room.find(query).lean().sort({ createdAt: -1 });
+        
+        // Populate tenant from active contracts
+        const Contract = require('../models/Contract');
+        const activeContracts = await Contract.find({ status: 1 }).populate('tenantId', 'fullName');
+        
+        for (let room of rooms) {
+            const contract = activeContracts.find(c => c.roomId && c.roomId.toString() === room._id.toString());
+            if (contract && contract.tenantId) {
+                room.tenant = contract.tenantId.fullName;
+            }
+        }
+
         res.status(200).json({
             success: true,
             message: "Lấy danh sách phòng thành công!",
