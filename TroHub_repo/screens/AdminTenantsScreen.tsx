@@ -13,6 +13,8 @@ export default function AdminTenantsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [idCard, setIdCard] = useState("");
   const [selectedRoomCode, setSelectedRoomCode] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -42,8 +44,8 @@ export default function AdminTenantsScreen() {
   }, []);
 
   const handleAddTenant = async () => {
-    if (!fullName.trim() || !phone.trim() || !idCard.trim() || !selectedRoomCode.trim() || !startDate.trim()) {
-      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin!");
+    if (!fullName.trim() || !phone.trim() || !email.trim() || !password.trim() || !idCard.trim() || !selectedRoomCode.trim() || !startDate.trim()) {
+      Alert.alert("Lỗi", "Vui lòng điền đầy đủ thông tin (bao gồm Email và Mật khẩu)!");
       return;
     }
 
@@ -52,15 +54,18 @@ export default function AdminTenantsScreen() {
       await adminService.createTenant({
         fullName: fullName.trim(),
         phone: phone.trim(),
+        email: email.trim(),
         roomCode: selectedRoomCode,
         idCard: idCard.trim(),
         startDate,
-        password: phone.trim(), // default password is phone
+        password: password.trim(),
       });
       Alert.alert("Thành công", "Đã thêm khách thuê mới và tạo hợp đồng nháp!");
       setModalVisible(false);
       setFullName("");
       setPhone("");
+      setEmail("");
+      setPassword("");
       setIdCard("");
       setSelectedRoomCode("");
       loadData();
@@ -136,7 +141,17 @@ export default function AdminTenantsScreen() {
                     placeholder="Nhập họ và tên khách"
                   />
 
-                  <Text style={styles.label}>Số điện thoại (dùng để đăng nhập)</Text>
+                  <Text style={styles.label}>Email (Tên đăng nhập)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    placeholder="Nhập email"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+
+                  <Text style={styles.label}>Số điện thoại</Text>
                   <TextInput
                     style={styles.input}
                     value={phone}
@@ -144,6 +159,15 @@ export default function AdminTenantsScreen() {
                     placeholder="Nhập số điện thoại"
                     keyboardType="phone-pad"
                     maxLength={10}
+                  />
+
+                  <Text style={styles.label}>Mật khẩu</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Nhập mật khẩu cho khách"
+                    secureTextEntry
                   />
 
                   <Text style={styles.label}>Số CCCD</Text>

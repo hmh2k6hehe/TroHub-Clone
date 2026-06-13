@@ -137,7 +137,7 @@ export default function PaymentModal({
           )}
 
           <Pressable style={styles.confirmButton} onPress={handleConfirm}>
-            <Text style={styles.confirmText}>Xác nhận thanh toán</Text>
+            <Text style={styles.confirmText}>Xác nhận đã thanh toán</Text>
           </Pressable>
         </View>
       </View>

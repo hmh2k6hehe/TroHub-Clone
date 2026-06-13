@@ -125,7 +125,7 @@ export const adminService = {
     return response.success ? response.data : [];
   },
 
-  async createTenant(tenantData: { fullName: string; phone: string; roomCode: string; idCard: string; startDate: string; password?: string }): Promise<AdminTenant> {
+  async createTenant(tenantData: { fullName: string; phone: string; email: string; roomCode: string; idCard: string; startDate: string; password?: string }): Promise<AdminTenant> {
     const token = await authService.getToken();
     const response = await apiClient.post<{ success: boolean; data: AdminTenant }>("/tenants", tenantData, token);
     return response.data;
@@ -141,6 +141,12 @@ export const adminService = {
     const token = await authService.getToken();
     const response = await apiClient.post<{ success: boolean; data: AdminInvoice }>("/invoices", invoiceData, token);
     return response.data;
+  },
+
+  async remindInvoice(invoiceId: string): Promise<boolean> {
+    const token = await authService.getToken();
+    const response = await apiClient.post<{ success: boolean }>(`/invoices/${invoiceId}/remind`, {}, token);
+    return response.success;
   },
 
   async getContracts(): Promise<AdminContract[]> {
