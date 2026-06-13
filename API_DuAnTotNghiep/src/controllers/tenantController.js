@@ -161,6 +161,16 @@ exports.terminateTenant = async (req, res) => {
             return res.status(404).json({ success: false, message: "Khách thuê không có hợp đồng nào đang hiệu lực!" });
         }
 
+        // --- NEW LOGIC: Kiểm tra hóa đơn chưa thanh toán ---
+        const unpaidInvoice = await Invoice.findOne({ contractId: activeContract._id, status: { $in: [1, 3] } }); // 1: Chưa thanh toán, 3: Quá hạn
+        if (unpaidInvoice) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Không thể chấm dứt hợp đồng! Khách thuê này vẫn còn hóa đơn chưa thanh toán. Vui lòng thu tiền hoặc hủy hóa đơn trước." 
+            });
+        }
+        // ---------------------------------------------------
+
         // 1. Chuyển hợp đồng sang trạng thái Hết hạn (2)
         activeContract.status = 2;
         await activeContract.save();
@@ -168,8 +178,8 @@ exports.terminateTenant = async (req, res) => {
         // 2. Chuyển phòng về trạng thái Trống (0)
         await Room.findByIdAndUpdate(activeContract.roomId, { status: 0 });
 
-        // 3. (Tùy chọn) Chuyển tài khoản khách thành Inactive (0)
-        await Account.findByIdAndUpdate(tenantId, { status: 0 });
+        // 3. KHÔNG KHÓA TÀI KHOẢN KHÁCH THUÊ
+        // Giữ tài khoản active để khách vẫn có thể dùng App xem lại lịch sử hóa đơn cũ.
 
         res.status(200).json({ success: true, message: "Đã xử lý trả phòng thành công!" });
     } catch (error) {
