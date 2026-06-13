@@ -199,7 +199,25 @@ PORT=5000
 
 ---
 
-## Thay đổi trong phiên bản này (cập nhật 07/06/2026)
+## 🌟 Phiên bản Ổn định (Stable Release - Cập nhật 13/06/2026)
+
+**LƯU Ý QUAN TRỌNG:** Đây là phiên bản **Gần như Đầy đủ Chức năng (Near-Full Features)** có thể sử dụng được thực tế trên cả Web Admin và Mobile App. 
+Tất cả các luồng nghiệp vụ cốt lõi từ việc Đăng ký, Đăng nhập (có mã hóa bcrypt), Quản lý phòng, Tạo và Ký hợp đồng, Quản lý Hóa đơn và Xử lý sự cố đều đã được hoàn thiện và đồng bộ hóa qua duy nhất 1 Backend API.
+
+### Hướng dẫn sử dụng cốt lõi:
+1. **Dành cho Chủ Trọ (Web Admin):**
+   - Đăng nhập bằng tài khoản `admin@trohub.vn`.
+   - Tạo phòng mới, mời người thuê ký hợp đồng trực tiếp trên giao diện web.
+   - Quản lý hóa đơn hàng tháng, nhận yêu cầu sửa chữa và theo dõi doanh thu.
+2. **Dành cho Người Thuê (Mobile App / Web App):**
+   - Đăng ký tài khoản trên ứng dụng. Hệ thống mã hóa bảo mật mật khẩu.
+   - Đăng nhập và xác nhận Hợp đồng từ chủ trọ.
+   - Nhận hóa đơn hàng tháng, lấy mã QR thanh toán và xác nhận đã thanh toán.
+   - Gửi sự cố sửa chữa kèm hình ảnh để chủ trọ xử lý.
+
+---
+
+## Thay đổi trong các phiên bản trước (cập nhật 07/06/2026)
 
 ### Backend (API)
 - ✅ **Thêm `/api/me` endpoint** — Portal người thuê: lấy phòng, HĐ, hóa đơn, thanh toán, sửa chữa, stats
