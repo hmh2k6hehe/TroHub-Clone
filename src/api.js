@@ -1,8 +1,7 @@
 import { API_CONFIG } from "./api-config.js?v=13";
 
-/**
- * Hàm gọi API chung tự động đính kèm Token
- */
+// Hàm tiện ích để gọi API với xử lý lỗi và token tự động
+// Tất cả các endpoint API nên sử dụng fetchAPI để đảm bảo nhất quán
 export const fetchAPI = async (endpoint, options = {}) => {
   const token = localStorage.getItem("trohub_token");
   
