@@ -62,7 +62,7 @@ export default function LoginScreen({ onLogin }: Props) {
     let isValid = true;
 
     if (!loginEmail.trim()) {
-      setLoginEmailError("Vui lòng nhập email đăng nhập");
+      setLoginEmailError("Vui lòng nhập thông tin đăng nhập");
       isValid = false;
     } else {
       setLoginEmailError("");
@@ -163,7 +163,7 @@ export default function LoginScreen({ onLogin }: Props) {
       } else {
         if (!validateLogin()) return;
 
-        await onLogin(loginEmail.trim(), password);
+        await onLogin(loginEmail.trim(), password.trim());
       }
     } catch (error) {
       console.log(isRegister ? "Lỗi đăng ký:" : "Lỗi đăng nhập:", error);
@@ -265,16 +265,15 @@ export default function LoginScreen({ onLogin }: Props) {
               ) : (
                 <>
                   {/* ===== FORM ĐĂNG NHẬP ===== */}
-                  <Text style={styles.label}>Email đăng nhập</Text>
+                  <Text style={styles.label}>Email / Số điện thoại / Tên đăng nhập</Text>
                   <TextInput
                     style={[styles.input, loginEmailError ? styles.inputError : null]}
                     value={loginEmail}
                     onChangeText={(v) => { setLoginEmail(v); if (loginEmailError) setLoginEmailError(""); }}
-                    placeholder="Nhập email đăng nhập"
+                    placeholder="Nhập email, số điện thoại hoặc tên đăng nhập"
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="off"
-                    keyboardType="email-address"
                     editable={!isSubmitting}
                   />
                   {loginEmailError ? <Text style={styles.errorText}>{loginEmailError}</Text> : null}

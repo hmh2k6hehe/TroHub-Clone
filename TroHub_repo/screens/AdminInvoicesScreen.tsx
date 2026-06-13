@@ -121,10 +121,38 @@ export default function AdminInvoicesScreen() {
       const toDate = `${y}-${m}-${new Date(Number(y), Number(m), 0).getDate()}`;
 
       const rentPrice = roomContract.fixedRentPrice || 0;
-      const servicesFee = 130000; // Wifi 100k + Rác 30k
       
-      const electricityAmount = Math.max(0, Number(elecNew) - Number(elecOld)) * 4000;
-      const waterAmount = Math.max(0, Number(waterNew) - Number(waterOld)) * 20000;
+      let electricityPrice = 4000;
+      let waterPrice = 20000;
+      let servicesFee = 130000;
+
+      if (roomContract.services && roomContract.services.length > 0) {
+        let otherTotal = 0;
+        let hasElec = false;
+        let hasWater = false;
+        
+        for (const s of roomContract.services) {
+          const sName = ((s.serviceId as any)?.name || "").toLowerCase();
+          const p = s.fixedPrice || (s.serviceId as any)?.defaultPrice || 0;
+          if (sName.includes("điện")) {
+            electricityPrice = p;
+            hasElec = true;
+          } else if (sName.includes("nước")) {
+            waterPrice = p;
+            hasWater = true;
+          } else {
+            otherTotal += p;
+          }
+        }
+        
+        // Nếu có dịch vụ từ hợp đồng thì mới update lại servicesFee
+        if (hasElec || hasWater || otherTotal > 0) {
+          servicesFee = otherTotal;
+        }
+      }
+      
+      const electricityAmount = Math.max(0, Number(elecNew) - Number(elecOld)) * electricityPrice;
+      const waterAmount = Math.max(0, Number(waterNew) - Number(waterOld)) * waterPrice;
       const totalAmount = rentPrice + electricityAmount + waterAmount + servicesFee;
 
       const rId = typeof roomContract.roomId === "string" ? roomContract.roomId : roomContract.roomId._id;
@@ -143,10 +171,10 @@ export default function AdminInvoicesScreen() {
         roomAmount: rentPrice,
         electricityOld: Number(elecOld),
         electricityNew: Number(elecNew),
-        electricityPrice: 4000,
+        electricityPrice: electricityPrice,
         waterOld: Number(waterOld),
         waterNew: Number(waterNew),
-        waterPrice: 20000,
+        waterPrice: waterPrice,
         services: servicesFee,
         discount: 0,
         total: totalAmount,
@@ -184,6 +212,16 @@ export default function AdminInvoicesScreen() {
     if (status === 2 || status === "PAID" || status === "Đã thanh toán") return "#EAF9F1";
     if (status === 3 || status === "OVERDUE" || status === "Quá hạn") return "#E8E9ED";
     return "#FFF1F1";
+  };
+
+  const handleRemind = async (invoiceId: string) => {
+    try {
+      await adminService.remindInvoice(invoiceId);
+      Alert.alert("Thành công", "Đã gửi nhắc nhở và cập nhật trạng thái!");
+      loadData();
+    } catch (error) {
+      Alert.alert("Lỗi", "Gửi nhắc nhở thất bại!");
+    }
   };
 
   const filteredInvoices = invoices.filter(invoice => {
@@ -249,8 +287,18 @@ export default function AdminInvoicesScreen() {
               <Text style={styles.invoiceAmount}>Tổng tiền: {item.totalAmount?.toLocaleString("vi-VN")}đ</Text>
               <Text style={styles.invoiceSub}>Khách thuê: {item.tenant || item.contractId?.tenantId?.fullName || "N/A"}</Text>
             </View>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusBg(item.status) }]}>
-              <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{getStatusText(item.status)}</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusBg(item.status) }]}>
+                <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>{getStatusText(item.status)}</Text>
+              </View>
+              {(item.status === 1 || item.status === "UNPAID" || item.status === "Chưa thanh toán") && (
+                <Pressable
+                  style={{ marginTop: 8, backgroundColor: COLORS.orange, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 }}
+                  onPress={() => handleRemind(item._id)}
+                >
+                  <Text style={{ color: "#FFF", fontSize: 11, fontWeight: "700" }}>Nhắc nhở</Text>
+                </Pressable>
+              )}
             </View>
           </View>
         )}
