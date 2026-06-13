@@ -602,8 +602,9 @@ const renderTenantForm = () => {
     <article class="card form-card narrow" data-form="tenant">
       ${field("Mã khách", tenant.id, "text", "id", isNew ? "" : "readonly")}
       ${field("Họ tên", tenant.name, "text", "name")}
-      ${field("Số điện thoại (Dùng làm tên đăng nhập)", tenant.phone, "text", "phone")}
-      ${field("Email liên hệ", tenant.email || "", "email", "email")}
+      ${field("Số điện thoại", tenant.phone, "text", "phone")}
+      ${field("Email (Dùng làm tên đăng nhập)", tenant.email || "", "email", "email")}
+      ${field("Mật khẩu", tenant.password || "", "password", "password")}
       ${field("Phòng", tenant.room, "text", "room")}
       ${field("CCCD", tenant.citizenId, "text", "citizenId")}
       ${field("Ngày bắt đầu", tenant.startDate, "text", "startDate")}
@@ -641,7 +642,7 @@ const renderContract = () => {
         </div>
         <hr style="margin:16px 0;border:none;border-top:1px solid var(--border)">
         <h2>Thông tin hợp đồng</h2>
-        <div class="form-grid one">
+        <div class="form-grid one" data-form="contract">
           ${field("Mã hợp đồng", c.id, "text", "id")}
           ${selectField("Chọn phòng", c.room, arrays.rooms().map(r => r.id), "room")}
           ${selectField("Chọn khách thuê", c.tenant, arrays.tenants().map(t => t.name), "tenant")}
@@ -729,12 +730,37 @@ const renderInvoiceCreate = () => {
   let autoRent = 0;
   let autoElectricityOld = 0;
   let autoWaterOld = 0;
+  let autoElectricityPrice = 3500;
+  let autoWaterPrice = 20000;
+  let autoServiceAmount = 150000;
 
   if (roomName) {
-    const activeContract = arrays.contracts().find(c => c.room === roomName && c.status === "Đang hiệu lực");
+    const allRoomContracts = arrays.contracts().filter(c => c.room === roomName);
+    const activeContract = allRoomContracts.find(c => c.status === "Đang hiệu lực") 
+                        || allRoomContracts.find(c => c.status === "Chờ duyệt")
+                        || allRoomContracts.find(c => c.status === "Chờ ký")
+                        || allRoomContracts[0];
     if (activeContract) {
       tenantName = activeContract.tenant;
       autoRent = activeContract.rent;
+      if (activeContract.services && activeContract.services.length > 0) {
+        let otherServiceTotal = 0;
+        for (const s of activeContract.services) {
+          if (!s.serviceId) continue;
+          const name = (s.serviceId.name || "").toLowerCase();
+          const price = s.fixedPrice || s.serviceId.defaultPrice || 0;
+          if (name.includes("điện")) {
+            autoElectricityPrice = price;
+          } else if (name.includes("nước")) {
+            autoWaterPrice = price;
+          } else {
+            otherServiceTotal += price;
+          }
+        }
+        if (otherServiceTotal > 0) {
+          autoServiceAmount = otherServiceTotal;
+        }
+      }
     } else {
       const roomObj = arrays.rooms().find(r => r.id === roomName);
       if (roomObj && roomObj.tenant) tenantName = roomObj.tenant;
@@ -754,6 +780,9 @@ const renderInvoiceCreate = () => {
       state.calcRoomAmount = autoRent || 0;
       state.calcElectricityOld = autoElectricityOld;
       state.calcWaterOld = autoWaterOld;
+      state.calcElectricityPrice = autoElectricityPrice;
+      state.calcWaterPrice = autoWaterPrice;
+      state.calcServiceAmount = autoServiceAmount;
       state.lastInvoiceRoom = roomName;
   }
 
@@ -780,8 +809,7 @@ const renderInvoiceCreate = () => {
           ${calcField("Đơn giá nước / m3", "calcWaterPrice")}
           ${calcField("Phí xe + internet + rác", "calcServiceAmount")}
           ${calcField("Giảm giá", "calcDiscount")}
-          ${selectField("Phương thức thanh toán", "QR ngân hàng", ["QR ngân hàng", "MoMo", "VNPay", "ZaloPay", "Tiền mặt"], "paymentMethod")}
-          ${field("Mã giao dịch", "-", "text", "transactionCode")}
+
         </div>
         <div class="calc-rule">
           <b>Quy tắc phạt:</b> sau khi xuất hóa đơn, nếu chưa thanh toán trong vòng 7 ngày thì phạt 10% tổng tiền trước phạt.
@@ -852,11 +880,7 @@ const renderInvoiceDetail = () => {
           <div><dt>Phương thức TT</dt><dd>${invoice.paymentMethod || "-"}</dd></div>
           <div><dt>Mã giao dịch</dt><dd>${invoice.transactionCode || "-"}</dd></div>
         </dl>
-        <div class="form-grid">
-          ${selectField("Trạng thái", invoice.status, ["Chưa thanh toán", "Đã thanh toán", "Quá hạn"], "status")}
-          ${selectField("P.Thức thanh toán", invoice.paymentMethod, ["Tiền mặt", "Chuyển khoản", "Thẻ", "Khác"], "paymentMethod")}
-          ${field("Mã giao dịch", invoice.transactionCode, "text", "transactionCode")}
-        </div>
+
       </article>
       <article class="card panel">
         <h2>Chi tiết tiền</h2>
@@ -1090,7 +1114,10 @@ const renderQRModal = () => {
           <div><b>Số tiền:</b> <span style="color:var(--primary); font-weight:bold; font-size:1.1em">${money(amount)}</span></div>
           <div><b>Nội dung CK:</b> ${invoice.id}</div>
         </div>
-        <button class="btn full" data-close-qr>Đóng màn hình</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn full" data-confirm-pay="${invoice.objectId || invoice.id}">Xác nhận đã thanh toán</button>
+          <button class="btn outline full" data-close-qr>Đóng</button>
+        </div>
       </div>
     </div>
   `;
@@ -1645,14 +1672,28 @@ const handleAction = async (action) => {
     if (action === "edit-tenant-from-detail") return setState({ adminPage: "tenant-form" });
     if (action === "save-tenant") {
       const payload = collectForm("tenant");
+      payload.startDate = state.tenantStartDate;
+      
+      if (!state.selectedTenant) {
+        if (!payload.email) return showToast("Vui lòng nhập Email (Dùng làm tên đăng nhập)!");
+        if (!payload.password) return showToast("Vui lòng nhập Mật khẩu cho tài khoản!");
+      }
+      
       if (!payload.password) delete payload.password;
-      if (state.selectedTenant) {
-        const tenant = findTenant();
-        await api.tenants.update(tenant.objectId || state.selectedTenant, payload);
-      } else await api.tenants.create(payload);
-      await loadAllData();
-      setState({ adminPage: "tenants" });
-      return showToast("Đã lưu khách thuê bằng API");
+      
+      try {
+        if (state.selectedTenant) {
+          const tenant = findTenant();
+          await api.tenants.update(tenant.objectId || state.selectedTenant, payload);
+        } else {
+          await api.tenants.create(payload);
+        }
+        await loadAllData();
+        setState({ adminPage: "tenants" });
+        return showToast("Đã lưu khách thuê thành công!");
+      } catch (e) {
+        return showToast(e.message || "Có lỗi xảy ra khi lưu!");
+      }
     }
 
     if (action === "draft-contract" || action === "create-contract") {
@@ -1742,8 +1783,12 @@ const handleAction = async (action) => {
       const tenantId = state.selectedTenant;
       const tenant = arrays.tenants().find(t => t.id === tenantId);
       if (!tenant) return showToast("Chưa chọn khách thuê");
-      const unpaid = arrays.invoices().filter(i => i.tenant === tenant.name && i.status === "Chưa thanh toán");
+      const unpaid = arrays.invoices().filter(i => i.tenant === tenant.name && (i.status === "Chưa thanh toán" || i.status === "Quá hạn"));
       if (unpaid.length === 0) return showToast("Khách này không có hóa đơn chưa thanh toán");
+      for (const inv of unpaid) {
+        await api.invoices.remind(inv.objectId || inv.id);
+      }
+      await loadAllData();
       return showToast(`Đã gửi yêu cầu thanh toán ${unpaid.length} hóa đơn cho ${tenant.name}`);
     }
 
@@ -1957,11 +2002,12 @@ app.addEventListener("click", async (event) => {
     return;
   }
 
-  if (target.dataset.tenantPay) {
+  if (target.dataset.confirmPay) {
     try {
-      await api.me.payInvoice(target.dataset.tenantPay, { paymentMethod: "QR ngân hàng" });
+      await api.me.payInvoice(target.dataset.confirmPay, { paymentMethod: "QR ngân hàng" });
       await loadTenantData();
       showToast("Đã ghi nhận thanh toán hóa đơn");
+      setState({ showQRForInvoice: null });
     } catch (error) {
       showToast(error.message || "Không thanh toán được hóa đơn");
     }

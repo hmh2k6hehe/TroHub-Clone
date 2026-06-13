@@ -56,6 +56,7 @@ export const API_CONFIG = {
   // Hóa đơn
   MAP_INVOICE: (apiData) => ({
     id: apiData.invoiceCode || apiData._id || apiData.id || "",
+    objectId: apiData._id || apiData.id,
     room: apiData.room || apiData.contractId?.roomId?.roomCode || apiData.contractId?.roomId?.name || "-",
     tenant: apiData.tenant || apiData.contractId?.tenantId?.fullName || apiData.contractId?.tenantId?.name || "-",
     month: apiData.period || apiData.month || "",
@@ -77,7 +78,7 @@ export const API_CONFIG = {
     paymentMethod: apiData.paymentMethod || "",
     transactionCode: apiData.transactionCode || "-",
     total: apiData.totalAmount || apiData.total || 0,
-    status: ["Chưa thanh toán", "Đã thanh toán", "Quá hạn"][apiData.status] || "Chưa thanh toán"
+    status: ["Nháp", "Chưa thanh toán", "Đã thanh toán", "Quá hạn"][apiData.status] || "Chưa thanh toán"
   }),
 
   // Yêu cầu sửa chữa
@@ -105,7 +106,8 @@ export const API_CONFIG = {
     rent: apiData.fixedRentPrice || apiData.rent || 0,
     deposit: apiData.fixedDeposit || apiData.deposit || 0,
     status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ duyệt"][apiData.status] || "Chờ ký",
-    tenantAccepted: apiData.status > 0
+    tenantAccepted: apiData.status > 0,
+    services: apiData.services || []
   }),
 
   // ============================================
@@ -128,7 +130,7 @@ export const API_CONFIG = {
     idCard: uiData.citizenId || "",
     password: uiData.password || "",
     roomCode: uiData.room || "",
-    startDate: uiData.startDate || new Date().toISOString(),
+    startDate: uiData.startDate && uiData.startDate.includes("/") ? new Date(`${uiData.startDate.split("/")[2]}-${uiData.startDate.split("/")[1]}-${uiData.startDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.startDate || new Date().toISOString()),
     role: 2,
     status: uiData.status === "Ngừng thuê" ? 0 : 1
   }),
@@ -153,8 +155,8 @@ export const API_CONFIG = {
     return {
       roomId: uiData.room || "",
       tenantId: uiData.tenant || "",
-      startDate: uiData.startDate || new Date().toISOString(),
-      endDate: uiData.endDate || new Date().toISOString(),
+      startDate: uiData.startDate && uiData.startDate.includes("/") ? new Date(`${uiData.startDate.split("/")[2]}-${uiData.startDate.split("/")[1]}-${uiData.startDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.startDate || new Date().toISOString()),
+      endDate: uiData.endDate && uiData.endDate.includes("/") ? new Date(`${uiData.endDate.split("/")[2]}-${uiData.endDate.split("/")[1]}-${uiData.endDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.endDate || new Date().toISOString()),
       fixedRentPrice: uiData.rent || 0,
       fixedDeposit: uiData.deposit || 0,
       status: statusCode

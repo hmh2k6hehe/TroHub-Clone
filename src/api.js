@@ -152,6 +152,9 @@ export const api = {
       const data = await fetchAPI(`${API_CONFIG.ENDPOINTS.invoices}/${id}/pay`, { method: "PUT", body: JSON.stringify(payload) });
       return API_CONFIG.MAP_INVOICE(data.invoice || data);
     },
+    remind: async (id) => {
+      return await fetchAPI(`${API_CONFIG.ENDPOINTS.invoices}/${id}/remind`, { method: "PUT", body: JSON.stringify({}) });
+    },
   },
   payments: {
     getAll: async () => {

@@ -43,8 +43,14 @@ exports.login = async (req, res) => {
     try {
         const { username, password } = req.body;
 
-        // Tìm kiếm tài khoản dựa trên tên đăng nhập duy nhất
-        const account = await Account.findOne({ username });
+        // Tìm kiếm tài khoản dựa trên tên đăng nhập, số điện thoại hoặc email
+        const account = await Account.findOne({
+            $or: [
+                { username: username },
+                { phone: username },
+                { email: username }
+            ]
+        });
         if (!account || account.status === 0) {
             return res.status(400).json({ success: false, message: "Tài khoản không tồn tại hoặc đã bị khóa!" });
         }

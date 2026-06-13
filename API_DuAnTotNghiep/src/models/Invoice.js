@@ -5,7 +5,8 @@ const invoiceSchema = new mongoose.Schema({
     period: { type: String, required: true }, // ky_hoa_don (VD: '05/2026')
     dueDate: { type: Date },                  // han_thanh_toan
     totalAmount: { type: Number },            // tong_tien
-    status: { type: Number, default: 0 },     // 0: Chưa TT, 1: Đã TT, 2: Quá hạn
+    status: { type: Number, default: 0 },     // 0: Nháp, 1: Chưa TT, 2: Đã TT, 3: Quá hạn
+    remindCount: { type: Number, default: 0 },
 
     // Các trường phẳng lưu dữ liệu đồng bộ trực tiếp từ Frontend
     room: { type: String, default: "" },

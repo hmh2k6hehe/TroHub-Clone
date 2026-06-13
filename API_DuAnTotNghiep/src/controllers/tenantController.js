@@ -37,13 +37,20 @@ exports.getAllTenants = async (req, res) => {
 // 2. Thêm khách thuê mới (Tạo tài khoản + Gán phòng qua Hợp đồng)
 exports.createTenant = async (req, res) => {
     try {
-        // Form UI Figma truyền lên: Họ tên, sđt, phòng, CCCD, ngày bắt đầu
-        const { fullName, phone, password, roomCode, idCard, startDate } = req.body;
+        // Form UI Figma truyền lên: Họ tên, sđt, email, password, phòng, CCCD, ngày bắt đầu
+        const { fullName, phone, email, password, roomCode, idCard, startDate } = req.body;
 
-        // Kiểm tra SĐT đã tồn tại chưa
-        const existingAccount = await Account.findOne({ phone, role: 2 });
+        if (!email) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập Email để làm tên đăng nhập!" });
+        }
+        if (!password) {
+            return res.status(400).json({ success: false, message: "Vui lòng nhập Mật khẩu cho tài khoản!" });
+        }
+
+        // Kiểm tra Email đã tồn tại chưa
+        const existingAccount = await Account.findOne({ email, role: 2 });
         if (existingAccount) {
-            return res.status(400).json({ success: false, message: "Số điện thoại này đã được đăng ký!" });
+            return res.status(400).json({ success: false, message: "Email này đã được đăng ký!" });
         }
 
         // Tìm phòng để lấy ID phòng và Giá mặc định
@@ -56,12 +63,11 @@ exports.createTenant = async (req, res) => {
         }
 
         // 1. Tạo tài khoản khách thuê
-        const rawPassword = password || phone;
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(rawPassword, salt);
+        const hashedPassword = await bcrypt.hash(password, salt);
 
         const newTenant = new Account({
-            username: phone, // Dùng SĐT làm username đăng nhập
+            username: email, // Dùng email làm username đăng nhập
             password: hashedPassword,
             fullName,
             phone,
@@ -122,6 +128,12 @@ exports.updateTenant = async (req, res) => {
         if (password) {
             const salt = await bcrypt.genSalt(10);
             updateData.password = await bcrypt.hash(password, salt);
+        } else {
+            delete updateData.password;
+        }
+
+        if (updateData.email) {
+            updateData.username = updateData.email;
         }
 
         const updatedTenant = await Account.findOneAndUpdate(

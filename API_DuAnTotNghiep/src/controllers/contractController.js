@@ -7,6 +7,7 @@ exports.getAllContracts = async (req, res) => {
         const contracts = await Contract.find()
             .populate('roomId', 'roomCode area')
             .populate('tenantId', 'fullName phone')
+            .populate('services.serviceId', 'name unit type defaultPrice')
             .sort({ createdAt: -1 });
             
         res.status(200).json({ success: true, data: contracts });

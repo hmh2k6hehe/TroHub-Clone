@@ -216,13 +216,16 @@ exports.payInvoice = async (req, res) => {
         if (invoice.status === 2) return res.status(400).json({ success: false, message: 'Hóa đơn đã được thanh toán!' });
 
         invoice.status = 2;
+        invoice.paymentMethod = req.body.paymentMethod || 'QR ngân hàng';
+        invoice.transactionCode = 'TXN' + Date.now().toString().slice(-6);
         await invoice.save();
 
         const newTransaction = new Transaction({
             invoiceId: invoice._id,
             amount: invoice.totalAmount,
             method: req.body.paymentMethod || 'QR ngân hàng',
-            status: 1
+            status: 1,
+            gatewayReference: invoice.transactionCode
         });
         await newTransaction.save();
 

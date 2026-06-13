@@ -6,6 +6,22 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'trohub_secret_key_2026';
 const Account = require('../models/Account');
 
+exports.remindInvoice = async (req, res) => {
+    try {
+        const invoice = await Invoice.findById(req.params.id);
+        if (!invoice) return res.status(404).json({ success: false, message: 'Không tìm thấy hóa đơn' });
+        
+        invoice.remindCount = (invoice.remindCount || 0) + 1;
+        if (invoice.remindCount >= 2 && invoice.status === 1) { // 1 = Chưa thanh toán
+            invoice.status = 3; // 3 = Quá hạn
+        }
+        await invoice.save();
+        res.status(200).json({ success: true, message: 'Đã gửi yêu cầu thanh toán', data: invoice });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
+    }
+};
+
 // 1. Lấy danh sách toàn bộ hóa đơn (Hiển thị lên bảng Web)
 exports.getAllInvoices = async (req, res) => {
     try {
@@ -263,6 +279,8 @@ exports.payInvoice = async (req, res) => {
 
         // 1. Cập nhật trạng thái hóa đơn thành Đã thanh toán (2)
         invoice.status = 2;
+        invoice.paymentMethod = req.body.paymentMethod || method || 'Tiền mặt';
+        invoice.transactionCode = gatewayReference || 'TXN' + Date.now().toString().slice(-6);
         await invoice.save();
 
         // 2. Tạo một bản ghi Giao dịch (Transaction) theo chuẩn ERD
@@ -271,7 +289,7 @@ exports.payInvoice = async (req, res) => {
             amount: invoice.totalAmount,
             method: method || 'Tiền mặt',
             status: 1, // 1: Thành công
-            gatewayReference: gatewayReference || ''
+            gatewayReference: invoice.transactionCode
         });
         await newTransaction.save();
 
