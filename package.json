@@ -5,9 +5,10 @@
   "type": "module",
   "description": "TroHub web admin with a local API and optional MongoDB storage.",
   "scripts": {
-    "dev": "python3 -m http.server 5173 --bind 127.0.0.1",
-    "dev:api": "cd API_DuAnTotNghiep && npm start",
-    "start": "python3 -m http.server 5173 --bind 127.0.0.1"
+    "dev": "concurrently \"npx http-server . -p 5173 -a 127.0.0.1\" \"cd API_DuAnTotNghiep && npm start\"",
+    "web": "npx http-server . -p 5173 -a 127.0.0.1",
+    "api": "cd API_DuAnTotNghiep && npm start",
+    "start": "npm run dev"
   },
   "keywords": [
     "trohub",
@@ -20,6 +21,10 @@
     "mongodb": "^6.20.0"
   },
   "dependencies": {
-    "acorn": "^8.17.0"
+    "acorn": "^8.17.0",
+    "concurrently": "^9.1.2"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
   }
 }

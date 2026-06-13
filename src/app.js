@@ -63,10 +63,46 @@ const arrays = {
 };
 
 const statusClass = (status = "") => {
-  if (status.includes("Đã") || status.includes("Còn hiệu lực") || status.includes("hoàn thành")) return "success";
-  if (status.includes("Quá") || status.includes("Ngừng")) return "danger";
-  if (status.includes("Đang") || status.includes("Chưa") || status.includes("Nháp")) return "warning";
+  const s = String(status ?? "").toLowerCase();
+
+  if (
+    s === "1" ||
+    s.includes("đã") ||
+    s.includes("còn hiệu lực") ||
+    s.includes("hoàn thành") ||
+    s.includes("còn trống")
+  ) {
+    return "success";
+  }
+
+  if (
+    s === "2" ||
+    s.includes("quá") ||
+    s.includes("ngừng") ||
+    s.includes("bảo trì")
+  ) {
+    return "danger";
+  }
+
+  if (
+    s === "0" ||
+    s.includes("đang") ||
+    s.includes("chưa") ||
+    s.includes("nháp")
+  ) {
+    return "warning";
+  }
+
   return "info";
+};
+const roomStatusText = (status) => {
+  const s = String(status ?? "");
+
+  if (s === "0") return "Còn trống";
+  if (s === "1") return "Đang thuê";
+  if (s === "2") return "Bảo trì";
+
+  return status || "Không xác định";
 };
 
 const setState = (patch) => {
@@ -471,7 +507,7 @@ const renderRoomCard = (room) => `
   <article class="room-card card">
     <div class="card-title">
       <h3>${room.name}</h3>
-      ${badge(room.status)}
+      ${badge(roomStatusText(room.status))}
     </div>
     <dl>
       <div><dt>Giá thuê</dt><dd>${money(room.rent)}</dd></div>
@@ -508,7 +544,7 @@ const renderRoomDetail = () => {
     <div class="detail-header card">
       <div>
         <h2>${room.name || "-"}</h2>
-        ${badge(room.status || "-")}
+        ${badge(roomStatusText(room.status))}
       </div>
       <div class="actions">
         ${button("Sửa phòng", "edit-room", "outline")}
@@ -525,7 +561,7 @@ const renderRoomDetail = () => {
           <div><dt>Tiền cọc</dt><dd>${money(room.deposit || 0)}</dd></div>
           <div><dt>Diện tích</dt><dd>${room.area || 0}m2</dd></div>
           <div><dt>Số người tối đa</dt><dd>${room.max || 0}</dd></div>
-          <div><dt>Trạng thái</dt><dd>${room.status || "-"}</dd></div>
+          <div><dt>Trạng thái</dt><dd>${roomStatusText(room.status)}</dd></div>
           <div><dt>Ghi chú</dt><dd>${room.note || "-"}</dd></div>
         </dl>
       </article>
