@@ -122,13 +122,8 @@ export const api = {
       return Array.isArray(data) ? data.map(API_CONFIG.MAP_CONTRACT) : [];
     },
     getHistory: async () => {
-      try {
-        const data = await fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/history`);
-        return Array.isArray(data) ? data.map(API_CONFIG.MAP_CONTRACT) : [];
-      } catch (e) {
-        return [];
-      }
-    },
+  return [];
+},
     create: (payload) => fetchAPI(API_CONFIG.ENDPOINTS.contracts, { method: "POST", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
     update: (id, payload) => fetchAPI(`${API_CONFIG.ENDPOINTS.contracts}/${id}`, { method: "PUT", body: JSON.stringify(API_CONFIG.MAP_CONTRACT_PAYLOAD(payload)) }),
     // Admin xác nhận hợp đồng (status 4 → 1)
