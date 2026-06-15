@@ -56,10 +56,12 @@ exports.getTenantPortal = async (req, res) => {
             };
         }
 
-        // Lấy hóa đơn theo hợp đồng hiệu lực (bỏ qua hóa đơn nháp status: 0)
+        const allContractIds = contracts.map(c => c._id);
+
+        // Lấy tất cả hóa đơn theo mảng các hợp đồng (cả cũ và mới), bỏ qua hóa đơn nháp status: 0
         let invoices = [];
-        if (activeContract) {
-            const rawInvoices = await Invoice.find({ contractId: activeContract._id, status: { $ne: 0 } }).sort({ createdAt: -1 });
+        if (allContractIds.length > 0) {
+            const rawInvoices = await Invoice.find({ contractId: { $in: allContractIds }, status: { $ne: 0 } }).sort({ createdAt: -1 });
             invoices = rawInvoices.map(inv => ({
                 id: inv.invoiceCode || inv._id.toString(),
                 month: inv.period || '',
@@ -97,11 +99,11 @@ exports.getTenantPortal = async (req, res) => {
             }));
         }
 
-        // Lấy lịch sử giao dịch
+        // Lấy lịch sử giao dịch của TẤT CẢ hóa đơn
         const invoiceIds = invoices.map(i => i.id);
         let payments = [];
-        if (activeContract) {
-            const rawInvoiceObjs = await Invoice.find({ contractId: activeContract._id });
+        if (allContractIds.length > 0) {
+            const rawInvoiceObjs = await Invoice.find({ contractId: { $in: allContractIds } });
             const invoiceMongoIds = rawInvoiceObjs.map(i => i._id);
             const transactions = await Transaction.find({ invoiceId: { $in: invoiceMongoIds } }).sort({ createdAt: -1 });
             payments = transactions.map((t, idx) => ({
@@ -115,10 +117,10 @@ exports.getTenantPortal = async (req, res) => {
             }));
         }
 
-        // Lấy yêu cầu sửa chữa của tenant
+        // Lấy yêu cầu sửa chữa của TẤT CẢ hợp đồng
         let repairs = [];
-        if (activeContract) {
-            const rawRepairs = await RepairRequest.find({ contractId: activeContract._id }).sort({ createdAt: -1 });
+        if (allContractIds.length > 0) {
+            const rawRepairs = await RepairRequest.find({ contractId: { $in: allContractIds } }).sort({ createdAt: -1 });
             repairs = rawRepairs.map(r => ({
                 id: r._id.toString(),
                 category: r.title || '',
@@ -147,7 +149,7 @@ exports.getTenantPortal = async (req, res) => {
             endDate: c.endDate ? new Date(c.endDate).toLocaleDateString('vi-VN') : '',
             rent: c.fixedRentPrice || 0,
             deposit: c.fixedDeposit || 0,
-            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy', 'Chờ chủ duyệt'][c.status] || 'Chờ ký',
+            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy', 'Chờ chủ duyệt', 'Yêu cầu trả phòng'][c.status] || 'Chờ ký',
             tenantAccepted: c.status > 0
         }));
 
@@ -271,6 +273,40 @@ exports.createRepair = async (req, res) => {
         await newRepair.save();
 
         res.status(201).json({ success: true, message: 'Đã gửi yêu cầu sửa chữa!', data: newRepair });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
+    }
+};
+
+// PUT /api/me/request-terminate/:contractId - Người thuê yêu cầu trả phòng
+exports.requestTerminateContract = async (req, res) => {
+    try {
+        const tenantId = getTenantIdFromToken(req);
+        if (!tenantId) return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+
+        const contract = await Contract.findById(req.params.contractId);
+        if (!contract) return res.status(404).json({ success: false, message: 'Không tìm thấy hợp đồng!' });
+        if (contract.tenantId.toString() !== tenantId.toString()) {
+            return res.status(403).json({ success: false, message: 'Bạn không có quyền thực hiện thao tác này!' });
+        }
+        if (contract.status !== 1) {
+            return res.status(400).json({ success: false, message: 'Hợp đồng không ở trạng thái Đang thuê để trả phòng!' });
+        }
+
+        // Kiểm tra nợ
+        const unpaidInvoice = await Invoice.findOne({ contractId: contract._id, status: { $in: [1, 3] } });
+        if (unpaidInvoice) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Bạn cần thanh toán toàn bộ hóa đơn trước khi yêu cầu trả phòng." 
+            });
+        }
+
+        // Đổi trạng thái sang Chờ duyệt trả phòng (5)
+        contract.status = 5;
+        await contract.save();
+
+        res.status(200).json({ success: true, message: 'Đã gửi yêu cầu trả phòng thành công. Vui lòng chờ chủ trọ xác nhận!' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
     }

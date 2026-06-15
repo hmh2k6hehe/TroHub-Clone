@@ -14,4 +14,7 @@ router.put('/pay-invoice/:invoiceId', meController.payInvoice);
 // Người thuê gửi yêu cầu sửa chữa
 router.post('/repairs', meController.createRepair);
 
+// Người thuê yêu cầu trả phòng
+router.put('/request-terminate/:contractId', meController.requestTerminateContract);
+
 module.exports = router;

@@ -101,21 +101,23 @@ export default function LoginScreen({ onLogin }: Props) {
       setRegEmailError("");
     }
 
-    if (!regPhone.trim()) {
+    const rawPhone = regPhone.replace(/\D/g, '');
+    if (!rawPhone) {
       setRegPhoneError("Vui lòng nhập số điện thoại");
       isValid = false;
-    } else if (!/^\d{10}$/.test(regPhone.trim())) {
-      setRegPhoneError("Số điện thoại phải gồm 10 chữ số");
+    } else if (rawPhone.length !== 10) {
+      setRegPhoneError("Số điện thoại phải gồm đúng 10 chữ số");
       isValid = false;
     } else {
       setRegPhoneError("");
     }
 
-    if (!regCccd.trim()) {
+    const rawCccd = regCccd.replace(/\D/g, '');
+    if (!rawCccd) {
       setRegCccdError("Vui lòng nhập số CMND/CCCD");
       isValid = false;
-    } else if (!/^\d{12}$/.test(regCccd.trim())) {
-      setRegCccdError("Số CCCD phải gồm 12 chữ số");
+    } else if (rawCccd.length !== 12) {
+      setRegCccdError("Số CCCD phải gồm đúng 12 chữ số");
       isValid = false;
     } else {
       setRegCccdError("");
@@ -144,8 +146,8 @@ export default function LoginScreen({ onLogin }: Props) {
           email: regEmail.trim(),
           password: regPassword,
           fullName: fullName.trim(),
-          phone: regPhone.trim(),
-          idCard: regCccd.trim(),
+          phone: regPhone.replace(/\D/g, ''),
+          idCard: regCccd.replace(/\D/g, ''),
         });
         Alert.alert(
           "Thành công",
@@ -230,9 +232,20 @@ export default function LoginScreen({ onLogin }: Props) {
                   <TextInput
                     style={[styles.input, regPhoneError ? styles.inputError : null]}
                     value={regPhone}
-                    onChangeText={(v) => { setRegPhone(v); if (regPhoneError) setRegPhoneError(""); }}
-                    placeholder="Nhập số điện thoại (10 số)"
+                    onChangeText={(v) => { 
+                      const digits = v.replace(/\D/g, '');
+                      let formatted = digits;
+                      if (digits.length > 3 && digits.length <= 6) {
+                        formatted = `${digits.slice(0, 3)}.${digits.slice(3)}`;
+                      } else if (digits.length > 6) {
+                        formatted = `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 10)}`;
+                      }
+                      setRegPhone(formatted); 
+                      if (regPhoneError) setRegPhoneError(""); 
+                    }}
+                    placeholder="Nhập số điện thoại (VD: 090.123.4567)"
                     keyboardType="phone-pad"
+                    maxLength={12}
                     editable={!isSubmitting}
                   />
                   {regPhoneError ? <Text style={styles.errorText}>{regPhoneError}</Text> : null}
@@ -241,9 +254,13 @@ export default function LoginScreen({ onLogin }: Props) {
                   <TextInput
                     style={[styles.input, regCccdError ? styles.inputError : null]}
                     value={regCccd}
-                    onChangeText={(v) => { setRegCccd(v); if (regCccdError) setRegCccdError(""); }}
+                    onChangeText={(v) => { 
+                      setRegCccd(v.replace(/\D/g, '').slice(0, 12)); 
+                      if (regCccdError) setRegCccdError(""); 
+                    }}
                     placeholder="Nhập số CMND/CCCD (12 số)"
                     keyboardType="numeric"
+                    maxLength={12}
                     editable={!isSubmitting}
                   />
                   {regCccdError ? <Text style={styles.errorText}>{regCccdError}</Text> : null}
