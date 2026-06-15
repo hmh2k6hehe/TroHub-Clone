@@ -89,6 +89,7 @@ const mapNumericStatus = (status: number): ContractStatus => {
     case 2: return "expired";          // Hết hạn
     case 3: return "cancelled";        // Đã hủy
     case 4: return "awaiting_approval"; // Chờ chủ duyệt
+    case 5: return "requesting_termination"; // Yêu cầu trả phòng
     default: return "pending";
   }
 };
@@ -166,6 +167,8 @@ export const contractService = {
         throw new Error("Không tìm thấy thông tin đăng nhập");
       }
 
+      // SỬ DỤNG ENDPOINT ME PORTAL HOẶC CONTRACTS TÙY THEO BACKEND
+      // Gọi qua me portal là tốt nhất nhưng hiện tại đang gọi /contracts
       const response = await apiClient.get<ContractListResponse>(
         "/contracts",
         token
@@ -198,8 +201,9 @@ export const contractService = {
         throw new Error("Không tìm thấy token đăng nhập");
       }
 
+      // Backend đang sử dụng /api/me/sign-contract/:contractId
       const response = await apiClient.put<ContractActionResponse>(
-        `/contracts/${contractId}/sign`,
+        `/me/sign-contract/${contractId}`,
         {},
         token
       );
@@ -211,6 +215,32 @@ export const contractService = {
       return true;
     } catch (error) {
       console.log("Lỗi ký hợp đồng:", error);
+      throw error;
+    }
+  },
+
+  // Người thuê yêu cầu trả phòng (status 1 → 5)
+  async requestTerminate(contractId: string): Promise<boolean> {
+    try {
+      const token = await authService.getToken();
+
+      if (!token) {
+        throw new Error("Không tìm thấy token đăng nhập");
+      }
+
+      const response = await apiClient.put<ContractActionResponse>(
+        `/me/request-terminate/${contractId}`,
+        {},
+        token
+      );
+
+      if (!response.success) {
+        throw new Error(response.message || "Yêu cầu trả phòng thất bại");
+      }
+
+      return true;
+    } catch (error: any) {
+      console.log("Lỗi yêu cầu trả phòng:", error);
       throw error;
     }
   },

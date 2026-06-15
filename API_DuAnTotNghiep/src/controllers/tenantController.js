@@ -14,13 +14,14 @@ exports.getAllTenants = async (req, res) => {
     try {
         const tenants = await Account.find({ role: 2 }).lean().sort({ createdAt: -1 });
         
-        // Populate room from active contracts
-        const activeContracts = await Contract.find({ status: 1 }).populate('roomId', 'roomCode');
+        // Populate room from active contracts (1: Hiệu lực, 5: Yêu cầu trả phòng)
+        const activeContracts = await Contract.find({ status: { $in: [1, 5] } }).populate('roomId', 'roomCode');
         
         for (let t of tenants) {
             const contract = activeContracts.find(c => c.tenantId && c.tenantId.toString() === t._id.toString());
             if (contract && contract.roomId) {
                 t.room = contract.roomId.roomCode;
+                t.contractStatus = contract.status;
             }
         }
 
@@ -155,8 +156,8 @@ exports.terminateTenant = async (req, res) => {
     try {
         const tenantId = req.params.id;
 
-        // Tìm hợp đồng đang hiệu lực của khách này
-        const activeContract = await Contract.findOne({ tenantId: tenantId, status: 1 });
+        // Tìm hợp đồng đang hiệu lực của khách này (bao gồm cả trạng thái 5: Chờ duyệt trả phòng)
+        const activeContract = await Contract.findOne({ tenantId: tenantId, status: { $in: [1, 5] } });
         if (!activeContract) {
             return res.status(404).json({ success: false, message: "Khách thuê không có hợp đồng nào đang hiệu lực!" });
         }

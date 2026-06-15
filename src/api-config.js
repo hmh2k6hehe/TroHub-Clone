@@ -48,7 +48,7 @@ export const API_CONFIG = {
     room: apiData.room || "-", // Backend ko populate room
     citizenId: apiData.idCard || apiData.citizenId || "",
     startDate: apiData.startDate || "-",
-    status: apiData.status === 1 ? "Đang thuê" : "Ngừng thuê",
+    status: apiData.contractStatus === 5 ? "Yêu cầu trả phòng" : (apiData.status === 1 ? "Đang thuê" : "Ngừng thuê"),
     accountId: apiData._id || "",
     accountStatus: apiData.status === 1 ? "Đã tạo" : "Chưa tạo"
   }),
@@ -101,11 +101,12 @@ export const API_CONFIG = {
     id: apiData._id || apiData.id || "",
     room: apiData.roomId?.roomCode || apiData.roomId || apiData.room || "",
     tenant: apiData.tenantId?.fullName || apiData.tenantId || apiData.tenant || "",
+    tenantId: apiData.tenantId?._id || apiData.tenantId || "",
     startDate: apiData.startDate ? new Date(apiData.startDate).toLocaleDateString("vi-VN") : "",
     endDate: apiData.endDate ? new Date(apiData.endDate).toLocaleDateString("vi-VN") : "",
     rent: apiData.fixedRentPrice || apiData.rent || 0,
     deposit: apiData.fixedDeposit || apiData.deposit || 0,
-    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ duyệt"][apiData.status] || "Chờ ký",
+    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ duyệt", "Yêu cầu trả phòng"][apiData.status] || "Chờ ký",
     tenantAccepted: apiData.status > 0,
     services: apiData.services || []
   }),
