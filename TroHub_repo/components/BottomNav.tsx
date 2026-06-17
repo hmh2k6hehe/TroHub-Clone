@@ -19,7 +19,7 @@ type Props = {
   onChangeTab: (tab: Tab) => void;
   role: number; // 1: Chủ trọ, 2: Người thuê
 };
-
+//con cac
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
 const tenantTabs: {
