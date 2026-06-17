@@ -14,6 +14,8 @@ export const appData = {
     address: "25 Nguyễn Văn Cừ, Quận 5, TP.HCM",
     bank: "VCB - 0123456789"
   },
+  // Mock data for testing purposes
+  
   tenant: {
     id: "T001",
     name: "Nguyễn Văn A",
