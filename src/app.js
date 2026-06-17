@@ -620,7 +620,7 @@ const renderTenants = () => {
                 <button data-tenant-edit="${tenant.id}">Sửa</button>
                 <button data-tenant-account="${tenant.id}">Tạo TK</button>
                 <button data-tenant-invite="${tenant.id}">Mời ký</button>
-                <button data-tenant-stop="${tenant.id}">Ngừng thuê</button>
+                ${tenant.status === "Yêu cầu trả phòng" ? `<button style="background:var(--danger);color:#fff;border-color:var(--danger)" data-tenant-stop="${tenant.id}">Duyệt trả phòng</button>` : `<button data-tenant-stop="${tenant.id}">Ngừng thuê</button>`}
               </td>
             </tr>
           `).join("") || `<tr><td colspan="9">${q ? 'Không tìm thấy khách thuê nào.' : 'Chưa có khách thuê.'}</td></tr>`}
@@ -708,6 +708,8 @@ const renderContract = () => {
         </div>
         <div class="form-actions">
           ${c.status === "Chờ duyệt" ? button("Admin xác nhận hợp đồng", "admin-approve-contract") : ""}
+          ${c.status === "Yêu cầu trả phòng" ? `<button class="btn delete" data-tenant-stop="${c.tenantId}">Duyệt trả phòng</button>` : ""}
+          ${c.status === "Đang hiệu lực" ? `<button class="btn delete" data-tenant-stop="${c.tenantId}">Ngừng thuê</button>` : ""}
           ${button("Xuất PDF", "export-pdf", "secondary")}
         </div>
       </article>
@@ -760,7 +762,6 @@ const renderInvoices = () => renderAdminShell("Quản lý hóa đơn", `
 `, "+ Tạo hóa đơn");
 
 const renderInvoiceCreate = () => {
-  const calc = calculateInvoice();
   let roomName = state.room || state.selectedRoom || "";
   let tenantName = "";
   let autoRent = 0;
@@ -821,6 +822,8 @@ const renderInvoiceCreate = () => {
       state.calcServiceAmount = autoServiceAmount;
       state.lastInvoiceRoom = roomName;
   }
+
+  const calc = calculateInvoice();
 
   return renderAdminShell("Tạo hóa đơn", `
     <div class="two-col invoice-builder" data-form="invoice">
@@ -1214,6 +1217,7 @@ const renderTenantContract = () => {
         <p><b>Trạng thái:</b> ${badge(contract.status || "-")} ${contract.tenantAccepted ? badge("Người thuê đã ký") : badge("Chờ người thuê ký")}</p>
         <div class="form-actions">
           ${!contract.tenantAccepted ? `<button class="btn primary" data-tenant-sign="${contract.id}">Tôi đồng ý ký hợp đồng</button>` : ""}
+          ${contract.status === "Đang hiệu lực" ? `<button class="btn outline" style="color:var(--danger)" data-tenant-request-terminate="${contract.id}">Yêu cầu trả phòng</button>` : ""}
         </div>
       ` : `<p class="muted">Chủ trọ chưa gửi lời mời ký hợp đồng.</p>`}
     </article>
@@ -1674,7 +1678,7 @@ const handleAction = async (action) => {
       if (!invoice) return;
       await api.invoices.markPaid(invoice.objectId || invoice.id, { paymentMethod: invoice.paymentMethod || "Tiền mặt" });
       await loadAllData();
-      renderApp();
+      render();
       return;
     }
 
@@ -1690,7 +1694,7 @@ const handleAction = async (action) => {
       await api.invoices.update(invoice.objectId || invoice.id, { status: "Quá hạn" });
       alert("Đã gửi lời nhắc và chuyển trạng thái sang Quá hạn!");
       await loadAllData();
-      renderApp();
+      render();
       return;
     }
 
@@ -1899,7 +1903,7 @@ app.addEventListener("change", (event) => {
   if (target.dataset.field === "room" && state.adminPage === "invoice-create") {
     state.room = target.value;
     state.selectedRoom = target.value;
-    renderApp();
+    render();
     return;
   }
 
@@ -1994,11 +1998,13 @@ app.addEventListener("click", async (event) => {
     const fullName = document.querySelector("#reg-fullName").value.trim();
     const phone = document.querySelector("#reg-phone").value.replace(/\D/g, "");
     const email = document.querySelector("#reg-email").value.trim();
-    const idCard = document.querySelector("#reg-idCard").value.trim();
+    const idCard = document.querySelector("#reg-idCard").value.replace(/\D/g, "");
     const username = email; // Email chính là tên đăng nhập
     const password = document.querySelector("#reg-password").value.trim();
     const role = Number(document.querySelector("#reg-role").value);
     if (!fullName || !phone || !email || !password) return showToast("Vui lòng điền đầy đủ thông tin có dấu *");
+    if (phone.length !== 10) return showToast("Số điện thoại phải gồm đúng 10 chữ số");
+    if (idCard && idCard.length !== 12) return showToast("Số CCCD phải gồm đúng 12 chữ số");
     if (password.length < 6) return showToast("Mật khẩu phải có ít nhất 6 ký tự");
     showToast("Đang đăng ký...");
     try {
@@ -2057,6 +2063,18 @@ app.addEventListener("click", async (event) => {
       showToast("Đã ký hợp đồng và gán phòng cho tài khoản");
     } catch (error) {
       showToast(error.message || "Không ký được hợp đồng");
+    }
+    return;
+  }
+
+  if (target.dataset.tenantRequestTerminate) {
+    if (!confirm("Bạn có chắc chắn muốn yêu cầu trả phòng? Bạn cần thanh toán hết nợ trước khi gửi yêu cầu.")) return;
+    try {
+      await api.me.requestTerminate(target.dataset.tenantRequestTerminate);
+      await loadTenantData();
+      showToast("Đã gửi yêu cầu trả phòng thành công");
+    } catch (error) {
+      showToast(error.message || "Không thể gửi yêu cầu");
     }
     return;
   }

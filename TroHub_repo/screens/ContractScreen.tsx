@@ -113,6 +113,40 @@ export default function ContractScreen() {
     );
   };
 
+  const handleRequestTerminate = (contract: Contract) => {
+    Alert.alert(
+      "Yêu cầu trả phòng",
+      `Bạn có chắc chắn muốn gửi yêu cầu trả phòng ${contract.room}?\n\n` +
+      "Lưu ý: Bạn phải thanh toán toàn bộ hóa đơn nợ trước khi gửi yêu cầu. Sau khi gửi, chủ trọ sẽ kiểm tra phòng và chốt hợp đồng.",
+      [
+        { text: "Hủy", style: "cancel" },
+        {
+          text: "Gửi yêu cầu",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              await contractService.requestTerminate(contract.id);
+              Alert.alert(
+                "Thành công",
+                "Đã gửi yêu cầu trả phòng! Vui lòng chờ chủ trọ xác nhận."
+              );
+              const data = await contractService.getMyContracts();
+              setContracts(data);
+            } catch (error) {
+              Alert.alert(
+                "Lỗi",
+                error instanceof Error ? error.message : "Gửi yêu cầu thất bại. Vui lòng thử lại."
+              );
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingBox}>
@@ -255,6 +289,32 @@ export default function ContractScreen() {
               <View style={styles.awaitingBox}>
                 <Text style={styles.awaitingText}>
                   ⏳ Bạn đã ký xác nhận. Đang chờ chủ trọ duyệt để hợp đồng có hiệu lực.
+                </Text>
+              </View>
+            )}
+
+            {/* Nút Yêu cầu trả phòng - chỉ hiện khi status = active (Đang hiệu lực) */}
+            {contract.status === "active" && (
+              <View style={styles.signBox}>
+                <Pressable
+                  style={[styles.signButton, { backgroundColor: COLORS.red }, isLoading && styles.signButtonDisabled]}
+                  onPress={() => handleRequestTerminate(contract)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.signButtonText}>🚪 Yêu cầu trả phòng</Text>
+                  )}
+                </Pressable>
+              </View>
+            )}
+
+            {/* Thông báo chờ duyệt trả phòng */}
+            {contract.status === "requesting_termination" && (
+              <View style={styles.awaitingBox}>
+                <Text style={styles.awaitingText}>
+                  ⏳ Bạn đã gửi yêu cầu trả phòng. Đang chờ chủ trọ kiểm tra và chốt hợp đồng.
                 </Text>
               </View>
             )}

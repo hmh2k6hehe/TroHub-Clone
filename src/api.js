@@ -76,6 +76,7 @@ export const api = {
     createRepair: (payload) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/repairs`, { method: "POST", body: JSON.stringify(payload) }),
     payInvoice: (id, payload = {}) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/pay-invoice/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
     signContract: (id) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/sign-contract/${id}`, { method: "PUT", body: JSON.stringify({}) }),
+    requestTerminate: (contractId) => fetchAPI(`${API_CONFIG.ENDPOINTS.me}/request-terminate/${contractId}`, { method: "PUT", body: JSON.stringify({}) }),
   },
   rooms: {
     getAll: async () => {

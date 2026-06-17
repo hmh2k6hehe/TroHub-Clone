@@ -1,4 +1,4 @@
-export type ContractStatus = "pending" | "active" | "expired" | "cancelled" | "awaiting_approval";
+export type ContractStatus = "pending" | "active" | "expired" | "cancelled" | "awaiting_approval" | "requesting_termination";
 
 export type Contract = {
   id: string;

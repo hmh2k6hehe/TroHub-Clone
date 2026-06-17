@@ -149,7 +149,7 @@ exports.getTenantPortal = async (req, res) => {
             endDate: c.endDate ? new Date(c.endDate).toLocaleDateString('vi-VN') : '',
             rent: c.fixedRentPrice || 0,
             deposit: c.fixedDeposit || 0,
-            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy', 'Chờ chủ duyệt'][c.status] || 'Chờ ký',
+            status: ['Chờ ký', 'Đang hiệu lực', 'Đã kết thúc', 'Đã hủy', 'Chờ chủ duyệt', 'Yêu cầu trả phòng'][c.status] || 'Chờ ký',
             tenantAccepted: c.status > 0
         }));
 
@@ -273,6 +273,40 @@ exports.createRepair = async (req, res) => {
         await newRepair.save();
 
         res.status(201).json({ success: true, message: 'Đã gửi yêu cầu sửa chữa!', data: newRepair });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
+    }
+};
+
+// PUT /api/me/request-terminate/:contractId - Người thuê yêu cầu trả phòng
+exports.requestTerminateContract = async (req, res) => {
+    try {
+        const tenantId = getTenantIdFromToken(req);
+        if (!tenantId) return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+
+        const contract = await Contract.findById(req.params.contractId);
+        if (!contract) return res.status(404).json({ success: false, message: 'Không tìm thấy hợp đồng!' });
+        if (contract.tenantId.toString() !== tenantId.toString()) {
+            return res.status(403).json({ success: false, message: 'Bạn không có quyền thực hiện thao tác này!' });
+        }
+        if (contract.status !== 1) {
+            return res.status(400).json({ success: false, message: 'Hợp đồng không ở trạng thái Đang thuê để trả phòng!' });
+        }
+
+        // Kiểm tra nợ
+        const unpaidInvoice = await Invoice.findOne({ contractId: contract._id, status: { $in: [1, 3] } });
+        if (unpaidInvoice) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Bạn cần thanh toán toàn bộ hóa đơn trước khi yêu cầu trả phòng." 
+            });
+        }
+
+        // Đổi trạng thái sang Chờ duyệt trả phòng (5)
+        contract.status = 5;
+        await contract.save();
+
+        res.status(200).json({ success: true, message: 'Đã gửi yêu cầu trả phòng thành công. Vui lòng chờ chủ trọ xác nhận!' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi Server: ' + error.message });
     }

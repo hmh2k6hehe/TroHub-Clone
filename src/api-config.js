@@ -48,47 +48,13 @@ export const API_CONFIG = {
     email: apiData.email || apiData.username || "",
     room: apiData.room || apiData.roomId?.roomCode || "-",
     citizenId: apiData.idCard || apiData.citizenId || "",
-    startDate: apiData.createdAt ? new Date(apiData.createdAt).toLocaleDateString("vi-VN") : "",
-    status: Number(apiData.status) === 0 ? "Ngừng thuê" : "Đang thuê",
-    accountStatus: "Đã tạo"
+    startDate: apiData.startDate || "-",
+    status: apiData.status === 1 ? "Đang thuê" : "Ngừng thuê",
+    accountId: apiData._id || "",
+    accountStatus: apiData.status === 1 ? "Đã tạo" : "Chưa tạo"
   }),
 
-  MAP_TENANT_PAYLOAD: (payload) => ({
-    fullName: payload.name || payload.fullName,
-    phone: payload.phone,
-    email: payload.email,
-    username: payload.email,
-    password: payload.password,
-    idCard: payload.citizenId || payload.idCard,
-    room: payload.room,
-    status: payload.status === "Ngừng thuê" ? 0 : 1
-  }),
-
-  MAP_CONTRACT: (apiData) => ({
-    id: apiData._id || apiData.id || "",
-    objectId: apiData._id || apiData.id || "",
-    room: apiData.roomId?.roomCode || apiData.roomId || apiData.room || "",
-    tenant: apiData.tenantId?.fullName || apiData.tenantId || apiData.tenant || "",
-    startDate: apiData.startDate ? new Date(apiData.startDate).toLocaleDateString("vi-VN") : "",
-    endDate: apiData.endDate ? new Date(apiData.endDate).toLocaleDateString("vi-VN") : "",
-    rent: apiData.fixedRentPrice || apiData.rent || 0,
-    deposit: apiData.fixedDeposit || apiData.deposit || 0,
-    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy"][Number(apiData.status)] || "Chờ ký",
-    tenantAccepted: apiData.tenantAccepted || false,
-    services: apiData.services || []
-  }),
-
-  MAP_CONTRACT_PAYLOAD: (payload) => ({
-    roomId: payload.roomId || payload.room,
-    tenantId: payload.tenantId || payload.tenant,
-    startDate: payload.startDate,
-    endDate: payload.endDate,
-    fixedRentPrice: Number(payload.rent || payload.fixedRentPrice || 0),
-    fixedDeposit: Number(payload.deposit || payload.fixedDeposit || 0),
-    status: payload.status === "Đang hiệu lực" ? 1 : payload.status === "Đã kết thúc" ? 2 : payload.status === "Đã hủy" ? 3 : 0,
-    services: payload.services || []
-  }),
-
+  // Hóa đơn
   MAP_INVOICE: (apiData) => ({
     id: apiData.invoiceCode || apiData._id || apiData.id || "",
     objectId: apiData._id || apiData.id || "",
@@ -131,6 +97,81 @@ export const API_CONFIG = {
     images: apiData.images || []
   }),
 
+  // Hợp đồng
+  MAP_CONTRACT: (apiData) => ({
+    id: apiData._id || apiData.id || "",
+    room: apiData.roomId?.roomCode || apiData.roomId || apiData.room || "",
+    tenant: apiData.tenantId?.fullName || apiData.tenantId || apiData.tenant || "",
+    startDate: apiData.startDate ? new Date(apiData.startDate).toLocaleDateString("vi-VN") : "",
+    endDate: apiData.endDate ? new Date(apiData.endDate).toLocaleDateString("vi-VN") : "",
+    rent: apiData.fixedRentPrice || apiData.rent || 0,
+    deposit: apiData.fixedDeposit || apiData.deposit || 0,
+    status: ["Chờ ký", "Đang hiệu lực", "Đã kết thúc", "Đã hủy", "Chờ duyệt"][apiData.status] || "Chờ ký",
+    tenantAccepted: apiData.status > 0,
+    services: apiData.services || []
+  }),
+
+  // ============================================
+  // REVERSE MAPPERS: TỪ GIAO DIỆN -> BACKEND
+  // ============================================
+
+  MAP_ROOM_PAYLOAD: (uiData) => ({
+    roomCode: uiData.name ? uiData.name.replace("Phòng ", "") : (uiData.id || "Mới"),
+    area: uiData.area || 0,
+    defaultRentPrice: uiData.rent || 0,
+    defaultDeposit: uiData.deposit || 0,
+    status: uiData.status === "Đang thuê" ? 1 : uiData.status === "Bảo trì" ? 2 : 0,
+    note: uiData.note || ""
+  }),
+
+  MAP_TENANT_PAYLOAD: (uiData) => ({
+    fullName: uiData.name || "",
+    phone: uiData.phone || "",
+    email: uiData.email || "",
+    idCard: uiData.citizenId || "",
+    password: uiData.password || "",
+    roomCode: uiData.room || "",
+    startDate: uiData.startDate && uiData.startDate.includes("/") ? new Date(`${uiData.startDate.split("/")[2]}-${uiData.startDate.split("/")[1]}-${uiData.startDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.startDate || new Date().toISOString()),
+    role: 2,
+    status: uiData.status === "Ngừng thuê" ? 0 : 1
+  }),
+
+  MAP_CONTRACT_PAYLOAD: (uiData) => {
+    // Map text status to number
+    const statusMap = {
+      "Chờ ký": 0,
+      "Đang hiệu lực": 1,
+      "Đã kết thúc": 2,
+      "Đã hủy": 3,
+      "Chờ duyệt": 4
+    };
+    
+    let statusCode = 0;
+    if (typeof uiData.status === "string" && statusMap[uiData.status] !== undefined) {
+        statusCode = statusMap[uiData.status];
+    } else if (typeof uiData.status === "number") {
+        statusCode = uiData.status;
+    }
+
+    return {
+      roomId: uiData.room || "",
+      tenantId: uiData.tenant || "",
+      startDate: uiData.startDate && uiData.startDate.includes("/") ? new Date(`${uiData.startDate.split("/")[2]}-${uiData.startDate.split("/")[1]}-${uiData.startDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.startDate || new Date().toISOString()),
+      endDate: uiData.endDate && uiData.endDate.includes("/") ? new Date(`${uiData.endDate.split("/")[2]}-${uiData.endDate.split("/")[1]}-${uiData.endDate.split("/")[0]}T00:00:00.000Z`).toISOString() : (uiData.endDate || new Date().toISOString()),
+      fixedRentPrice: uiData.rent || 0,
+      fixedDeposit: uiData.deposit || 0,
+      status: statusCode
+    };
+  },
+
+  MAP_REPAIR_PAYLOAD: (uiData) => ({
+    title: uiData.category || "Yêu cầu sửa chữa",
+    content: uiData.description || "",
+    priority: 0,
+    images: uiData.images || []
+  }),
+
+  // Thanh toán
   MAP_PAYMENT: (apiData) => ({
     id: apiData.paymentCode || apiData._id || apiData.id || "",
     invoiceId: apiData.invoiceId?.invoiceCode || apiData.invoiceId || "",
