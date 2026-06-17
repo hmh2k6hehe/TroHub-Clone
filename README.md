@@ -39,25 +39,20 @@ trohub-web-only/                 <-- THƯ MỤC GỐC CHỨA TẤT CẢ
 
 ---
 
-## Cách chạy dự án
+## Cách chạy dự án (Dành cho thành viên nhóm)
 
-### 1. Khởi động Backend API
-```bash
-cd API_DuAnTotNghiep
-npm install
-npm run dev
-# Server chạy tại: http://localhost:5000
-# (Đường dẫn gốc API: http://localhost:5000/api)
-```
+🌟 **DỰ ÁN ĐÃ KẾT NỐI SẴN CLOUD API**
+Toàn bộ source code đã được cấu hình trỏ trực tiếp đến máy chủ Render (`https://api-phong-tro.onrender.com/api`).
+Bạn **KHÔNG CẦN** phải chạy Database hay chạy Backend API ở máy tính cá nhân. Chỉ cần chạy giao diện Frontend/Mobile là có sẵn dữ liệu chung của cả team!
 
-### 2. Khởi động Frontend (Web Admin)
+### 1. Khởi động Frontend (Web Admin)
 ```bash
 # Từ thư mục gốc trohub-web-only/
 npm run dev
 # Web Admin chạy tại: http://localhost:5173
 ```
 
-### 3. Khởi động Mobile App (Expo)
+### 2. Khởi động Mobile App (Expo)
 ```bash
 # Từ thư mục gốc, di chuyển vào thư mục app
 cd TroHub_repo
@@ -65,24 +60,11 @@ npm install
 npm run android # Mở máy ảo Android
 npm run ios     # Mở máy ảo iOS
 npm run web     # Mở giao diện trên trình duyệt
-# Mobile App (chế độ Web) chạy tại: http://localhost:8081 (hoặc 8082)
+# Mobile App chạy tại: http://localhost:8081
 ```
 
-#### Thư viện cài đặt (Mobile)
-- `expo` (SDK 54)
-- `expo-router` (Điều hướng)
-- `react-native`
-- `@react-navigation/bottom-tabs` & `@react-navigation/native`
-- `@react-native-async-storage/async-storage`
+*(Lưu ý: Nếu bạn muốn test API cục bộ để tự code thêm chức năng backend, hãy tham khảo folder `API_DuAnTotNghiep/README.md`)*
 
-### 4. MongoDB
-- Cần chạy MongoDB local hoặc MongoDB Atlas
-- Cấu hình kết nối trong file `.env`:
-```
-MONGODB_URI=mongodb://localhost:27017/trohub
-JWT_SECRET=trohub_secret_key_2026
-PORT=5000
-```
 
 ---
 
