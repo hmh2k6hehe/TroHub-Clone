@@ -56,10 +56,12 @@ exports.getTenantPortal = async (req, res) => {
             };
         }
 
-        // Lấy hóa đơn theo hợp đồng hiệu lực (bỏ qua hóa đơn nháp status: 0)
+        const allContractIds = contracts.map(c => c._id);
+
+        // Lấy tất cả hóa đơn theo mảng các hợp đồng (cả cũ và mới), bỏ qua hóa đơn nháp status: 0
         let invoices = [];
-        if (activeContract) {
-            const rawInvoices = await Invoice.find({ contractId: activeContract._id, status: { $ne: 0 } }).sort({ createdAt: -1 });
+        if (allContractIds.length > 0) {
+            const rawInvoices = await Invoice.find({ contractId: { $in: allContractIds }, status: { $ne: 0 } }).sort({ createdAt: -1 });
             invoices = rawInvoices.map(inv => ({
                 id: inv.invoiceCode || inv._id.toString(),
                 month: inv.period || '',
@@ -97,11 +99,11 @@ exports.getTenantPortal = async (req, res) => {
             }));
         }
 
-        // Lấy lịch sử giao dịch
+        // Lấy lịch sử giao dịch của TẤT CẢ hóa đơn
         const invoiceIds = invoices.map(i => i.id);
         let payments = [];
-        if (activeContract) {
-            const rawInvoiceObjs = await Invoice.find({ contractId: activeContract._id });
+        if (allContractIds.length > 0) {
+            const rawInvoiceObjs = await Invoice.find({ contractId: { $in: allContractIds } });
             const invoiceMongoIds = rawInvoiceObjs.map(i => i._id);
             const transactions = await Transaction.find({ invoiceId: { $in: invoiceMongoIds } }).sort({ createdAt: -1 });
             payments = transactions.map((t, idx) => ({
@@ -115,10 +117,10 @@ exports.getTenantPortal = async (req, res) => {
             }));
         }
 
-        // Lấy yêu cầu sửa chữa của tenant
+        // Lấy yêu cầu sửa chữa của TẤT CẢ hợp đồng
         let repairs = [];
-        if (activeContract) {
-            const rawRepairs = await RepairRequest.find({ contractId: activeContract._id }).sort({ createdAt: -1 });
+        if (allContractIds.length > 0) {
+            const rawRepairs = await RepairRequest.find({ contractId: { $in: allContractIds } }).sort({ createdAt: -1 });
             repairs = rawRepairs.map(r => ({
                 id: r._id.toString(),
                 category: r.title || '',

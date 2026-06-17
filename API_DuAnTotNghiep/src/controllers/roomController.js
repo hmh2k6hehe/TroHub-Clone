@@ -103,14 +103,27 @@ exports.updateRoom = async (req, res) => {
 // 5. Xóa phòng trọ
 exports.deleteRoom = async (req, res) => {
     try {
-        const room = await Room.findById(req.params.id);
+        const roomId = req.params.id;
+        const room = await Room.findById(roomId);
         if (!room) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy phòng cần xóa!' });
         }
         if (room.status === 1) {
             return res.status(400).json({ success: false, message: 'Không thể xóa phòng đang có người thuê!' });
         }
-        await Room.findByIdAndDelete(req.params.id);
+
+        // --- NEW LOGIC: Kiểm tra lịch sử tài chính ---
+        const Contract = require('../models/Contract');
+        const pastContracts = await Contract.findOne({ roomId: roomId });
+        if (pastContracts) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Không thể xóa vì phòng này đã có lịch sử hợp đồng và hóa đơn cũ. Vui lòng đổi tên hoặc chuyển sang "Bảo trì" để không mất dữ liệu doanh thu!' 
+            });
+        }
+        // ---------------------------------------------
+
+        await Room.findByIdAndDelete(roomId);
         res.status(200).json({ success: true, message: 'Đã xóa phòng thành công!' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Lỗi khi xóa phòng: ' + error.message });
