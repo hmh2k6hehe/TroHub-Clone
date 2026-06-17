@@ -1,0 +1,203 @@
+[33mcommit e23efbab99a5d986e434835855814243581670ec[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: 828f81d 2c60a19
+Author: Hoàng Minh Huy <hmh2k6hehe@gmail.com>
+Date:   Wed Jun 17 13:24:54 2026 +0700
+
+    Merge branch 'feature/enhance-logic-and-data-integrity' of https://github.com/hmh2k6hehe/TroHub-Clone
+
+[33mcommit 828f81d9b5e9e5467b5d55f7f859aa32ac231a34[m
+Author: Hoàng Minh Huy <hmh2k6hehe@gmail.com>
+Date:   Wed Jun 17 11:59:21 2026 +0700
+
+    Update data.js
+    
+    hihi
+
+[33mcommit 2b026ce55182d58890a89ca297a116cb7ee0d9b0[m
+Author: hmh2k6hehe <hmh2k6hehe@gmail.com>
+Date:   Sun Jun 14 12:20:42 2026 +0700
+
+    Update api.js
+    
+    reup
+
+[33mcommit b2f043a39fde5756db2122aa570ee5106147cecc[m
+Author: hmh2k6hehe <hmh2k6hehe@gmail.com>
+Date:   Sat Jun 13 22:40:28 2026 +0700
+
+    Update api.js
+
+[33mcommit 88971365f0d31682b96123158e7d6b933dd2edb1[m
+Author: hmh2k6hehe <hmh2k6hehe@gmail.com>
+Date:   Sat Jun 13 22:32:23 2026 +0700
+
+    fix api + wed
+
+[33mcommit 2c60a19bf572ecdc35274a9ef52b0eadb7f16bca[m[33m ([m[1;31morigin/feature/enhance-logic-and-data-integrity[m[33m)[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 18:19:02 2026 +0700
+
+    feat: Enhance data integrity for room deletion, tenant termination, and invoice history
+
+[33mcommit 55f2f3e971cd54cfda25bc9b4aa4dafaa1be1175[m
+Merge: 52e5406 60cdc26
+Author: Lợi Hoàng Nguyên <58549101+shenjohnsons11@users.noreply.github.com>
+Date:   Sat Jun 13 17:58:23 2026 +0700
+
+    Merge pull request #2 from shenjohnsons11/release/stable-v1
+    
+    docs: Update README to note stable release with near-full features
+
+[33mcommit 60cdc26f2d20fba1e8cfb90c28989ab7238cf381[m[33m ([m[1;31mupstream/release/stable-v1[m[33m, [m[1;31morigin/release/stable-v1[m[33m)[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 17:57:10 2026 +0700
+
+    docs: Update README to note stable release with near-full features
+
+[33mcommit 52e5406ded1f1d1630eedef7bf61d5203742f835[m
+Merge: e9924b5 2f3376f
+Author: Lợi Hoàng Nguyên <58549101+shenjohnsons11@users.noreply.github.com>
+Date:   Sat Jun 13 17:27:00 2026 +0700
+
+    Merge pull request #1 from shenjohnsons11/feature/save-working-progress
+    
+    feat: Save working progress for Web Admin, Mobile App and Backend
+
+[33mcommit 2f3376fd98180dc481e415e86cc3742f7c6f0714[m[33m ([m[1;31mupstream/feature/save-working-progress[m[33m, [m[1;31morigin/feature/save-working-progress[m[33m)[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 17:25:33 2026 +0700
+
+    feat: Save working progress for Web Admin, Mobile App and Backend
+
+[33mcommit e9924b542856901cffe9d4006c03dd9df6645709[m[33m ([m[1;33mtag: [m[1;33mv1.0.0-stable-webadmin[m[33m)[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 14:47:03 2026 +0700
+
+    Docs: Add STABLE_VERSION_NOTES.md as restore point
+
+[33mcommit c4cb882ac58ede4896e9814d1504bd9aee04db8d[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 13:52:24 2026 +0700
+
+    Fix invoice calculation and status logic. Fix tenant creation and authentication. Update to use email as username.
+
+[33mcommit 250906bf7949773de988a72db834d7a8e3a28225[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sat Jun 13 05:08:21 2026 +0700
+
+    fix(invoice/contract): refine workflows, auto-populate contract data in invoice, fix overdue penalty logic, remove draft invoice
+
+[33mcommit 91bb3c1fbc7de19947b3b4d1260bf0d203bcec65[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Thu Jun 11 20:22:27 2026 +0700
+
+    feat: restrict repair priority selection to admin and implement image upload on web and app
+
+[33mcommit 1b8efb8c80097402cc34523df6a127429708af28[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Thu Jun 11 16:55:27 2026 +0700
+
+    Docs: Update folder structure tree and add localhost URLs
+
+[33mcommit 6c890ba512d2aaf43d978908a72b9bd57e7194f9[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Thu Jun 11 16:49:31 2026 +0700
+
+    Update mobile app instructions
+
+[33mcommit cb9e52027eae7aec9f79dcb42bff5c70b087dd9d[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Thu Jun 11 16:38:28 2026 +0700
+
+    Include TroHub_repo as normal folder instead of submodule
+
+[33mcommit 19e40c5eb3921bcfae44504455d81ea529865bac[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Thu Jun 11 16:38:00 2026 +0700
+
+    Initialize project: TroHub Web Admin, Backend API, and Mobile App
+
+[33mcommit b20b92e0c3e5248ffa9505eb1ccfbbcc2c981097[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 08:23:13 2026 +0700
+
+    Fix auth: Extract user role from JWT token during login to guarantee tenant routing
+
+[33mcommit 19b623df669284f335f293d03d97e9097189931f[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 08:16:48 2026 +0700
+
+    Fix auth: Strip non-digits from phone on registration and handle empty tenant portal gracefully to prevent logout loops
+
+[33mcommit e608e489c0324673248c396aeb9eeb16cb569f0d[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 07:00:32 2026 +0700
+
+    Fix API integration: Use objectId for update/delete actions and fix date payloads for invoices
+
+[33mcommit 669485a8b71f713e8772a9a85a4823d4fc616f8b[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 06:52:57 2026 +0700
+
+    Fix UI: Fix crash in renderInvoiceCreate caused by undefined invoice variable, and fix payload status
+
+[33mcommit 52d81509b4a1938516b92e4850fa7601605648e6[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 06:48:41 2026 +0700
+
+    Fix UI: Rename export invoice button to Tạo hóa đơn and remove confusing header action
+
+[33mcommit 8be66df1caaa19ad301738d2575bc0aca58971c4[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 06:39:32 2026 +0700
+
+    Fix UI: Move contract actions to left form, update tenant repair API flow, fix invoice tenant auto-fill
+
+[33mcommit 3100548c955d5d88da49001ff6d8d9c82da66be8[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 06:27:03 2026 +0700
+
+    Fix UI: Format money inputs with dots and VND, keep contract preview visible for new drafts
+
+[33mcommit 1173c535a999d2e581182c0f8f092b8308b2e5e0[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 06:19:11 2026 +0700
+
+    Fix UI feedback: Phone input format, ID card maxlength, Auto-fill tenant in invoice, hide contract preview after signing, remove dummy header text
+
+[33mcommit 5976b244491f30007400e1ec7c5709ef4092d9ef[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 05:59:46 2026 +0700
+
+    Fix: Form đăng ký dùng email làm tên đăng nhập, lọc hóa đơn theo khách, danh sách hợp đồng, chi tiết khách thuê và gửi yêu cầu thanh toán
+
+[33mcommit 3a1fbb59c5981ff305f207b661f6f634aa7a3a4e[m
+Merge: 89156bd c5f65d3
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 05:35:38 2026 +0700
+
+    Merge remote-tracking branch 'origin/main' and resolve conflicts in README.md
+
+[33mcommit 89156bd3e0a8072eb218c107072f585fe267dc2e[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 05:34:38 2026 +0700
+
+    Cập nhật hoàn thiện luồng Người thuê, Lịch sử doanh thu và Fix giao diện
+
+[33mcommit 49c194cad469c1c6f6f2067e9e29d4c8059df3ce[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Sun Jun 7 05:30:15 2026 +0700
+
+    Cập nhật hoàn thiện luồng Người thuê, Lịch sử doanh thu và Fix giao diện
+
+[33mcommit c5f65d3aa0fba8c4e0d3138cc201a7b9da9a7b2c[m
+Author: shenjohnsons11 <58549101+shenjohnsons11@users.noreply.github.com>
+Date:   Tue Jun 2 01:12:25 2026 +0700
+
+    update
+
+[33mcommit 40cf38c04cd6f8d55b705d6aa858387445f13d77[m
+Author: shenjohnsons11 <shenjohnsons11@gmail.com>
+Date:   Fri May 29 14:09:58 2026 +0700
+
+    Build TroHub web admin only
