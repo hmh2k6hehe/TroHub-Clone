@@ -115,6 +115,9 @@ export const API_CONFIG = {
   // REVERSE MAPPERS: TỪ GIAO DIỆN -> BACKEND
   // ============================================
 
+  // Phòng
+  
+
   MAP_ROOM_PAYLOAD: (uiData) => ({
     roomCode: uiData.name ? uiData.name.replace("Phòng ", "") : (uiData.id || "Mới"),
     area: uiData.area || 0,
