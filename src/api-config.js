@@ -116,7 +116,7 @@ export const API_CONFIG = {
   // ============================================
 
   // Phòng
-  
+
 
   MAP_ROOM_PAYLOAD: (uiData) => ({
     roomCode: uiData.name ? uiData.name.replace("Phòng ", "") : (uiData.id || "Mới"),
@@ -173,7 +173,8 @@ export const API_CONFIG = {
     priority: 0,
     images: uiData.images || []
   }),
-
+ //  hihhi
+ 
   // Thanh toán
   MAP_PAYMENT: (apiData) => ({
     id: apiData.paymentCode || apiData._id || apiData.id || "",
